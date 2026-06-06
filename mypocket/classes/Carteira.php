@@ -31,6 +31,11 @@ class Carteira{
 
     }
 
+    public function getSaldo(): float
+    {
+        return $this->saldo;
+    }
+
     public function getTransacoes(): array{
         return $this->transacoes;
     }

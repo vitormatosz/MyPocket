@@ -2,16 +2,15 @@
 
 session_start();
 
-require_once 'processa.php';
-
 if (!isset($_SESSION['carteira'])) {
     require_once 'classes/Carteira.php';
     $_SESSION['carteira'] = new Carteira();
 }
+
 ?>
 
 <!DOCTYPE html>
-<html lang="en">
+<html lang="pt-br">
 
 <head>
     <meta charset="UTF-8">
@@ -20,15 +19,15 @@ if (!isset($_SESSION['carteira'])) {
 </head>
 
 <body>
-    <div>
-
-    </div>
+    <h3>Saldo:
+        R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?>
+    </h3>
 
     <div>
         <form action="processa.php" method="POST">
             <div>
                 <label>Valor</label>
-                <input type="number">
+                <input type="number" name="valor">
             </div>
 
             <div>
@@ -41,15 +40,43 @@ if (!isset($_SESSION['carteira'])) {
 
             <div>
                 <label>Descrição</label>
-                <input type="text">
+                <input type="text" name="descricao">
             </div>
 
             <div>
                 <label>Data</label>
-                <input type="date">
+                <input type="date" name="data">
             </div>
 
+            <button>Salvar</button>
+
         </form>
+    </div>
+
+    <div>
+        <h5>Extrato</h5>
+        <table>
+            <tr>
+                <th>Valor</th>
+                <th>Tipo</th>
+                <th>Descrição</th>
+                <th>Data</th>
+            </tr>
+
+            <tr>
+                <?php foreach ($carteira->getTransacoes() as $t): ?>
+
+                <tr>
+                    <td><?= $t->getValor() ?></td>
+                    <td><?= $t->getTipo(); ?></td>
+                    <td><?= $t->getDescricao(); ?></td>
+                    <td><?= $t->getData(); ?></td>
+                </tr>
+
+            <?php endforeach; ?>
+
+            </tr>
+        </table>
     </div>
 </body>
 
