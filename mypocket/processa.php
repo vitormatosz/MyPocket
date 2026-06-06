@@ -3,7 +3,11 @@ declare(strict_types=1);
 
 session_start();
 
-require_once 'classes/Carteira.php';
+require_once "classes/Carteira.php";
+
+if(isset($_SESSION['carteira'])){
+    
+}
 
 if (!isset($_SESSION['carteira'])) {
     $_SESSION['carteira'] = new Carteira();
@@ -17,13 +21,13 @@ try {
     $data = date('d/m/Y');
     $carteira = $_SESSION['carteira'];
 
-    if ($tipo === "Entrada") {
+    if ($tipo === "receita") {
         $transacao = new Receita($valor, $descricao, $data);
     } else {
         $transacao = new Despesa($valor, $descricao, $data);
     }
 
-    $carteira->adicionarTransacao($transacao);
+    $carteira->addTransacoes($transacao);
 
     $_SESSION['mensagem'] = "Transação cadastrada com sucesso!";
 
