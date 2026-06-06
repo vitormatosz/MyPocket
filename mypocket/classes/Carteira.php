@@ -13,7 +13,7 @@ class Carteira{
         $this->transacoes = [];
     }
 
-    public function adcTransacoes(Transacao $transacao): void{
+    public function addTransacoes(Transacao $transacao): void{
         if($transacao instanceof Receita){
             $this->saldo += $transacao->getValor();
         }
