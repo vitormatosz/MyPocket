@@ -1,21 +1,25 @@
 <?php
 declare(strict_types=1);
 
-session_start();
-
+require_once "classes/Transacao.php";
+require_once "classes/Receita.php";
+require_once "classes/Despesa.php";
 require_once "classes/Carteira.php";
+
+session_start();
 
 if (!isset($_SESSION['carteira'])) {
     $_SESSION['carteira'] = new Carteira();
 }
+
+$carteira = $_SESSION['carteira'];
 
 try {
 
     $tipo = $_POST['tipo'];
     $descricao = $_POST['descricao'];
     $valor = (float) $_POST['valor'];
-    $data = date('d/m/Y');
-    $carteira = $_SESSION['carteira'];
+    $data = $_POST['data'];
 
     if ($tipo === "receita") {
         $transacao = new Receita($valor, $descricao, $data);
@@ -32,6 +36,8 @@ try {
     $_SESSION['erro'] = $e->getMessage();
 
 }
+
+$_SESSION['carteira'] = $carteira;
 
 header("Location: index.php");
 exit;
