@@ -28,21 +28,21 @@ $carteira = $_SESSION['carteira'];
     <section class="section">
         <div class="container">
 
-            <h1 class="title"> MyPocket</h1>
+            <h1 class="title is-1"> MyPocket</h1>
 
             <div class="box">
                 <h2 class="subtitle">Saldo Atual</h2>
 
-                <p class="title has-text-success">
+                <p class="title has-text-link">
                     R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?>
                 </p>
             </div>
 
-            <div class="box">
+            <div class="box mt-6">
 
-                <h4 class="title is-4">
+                <h3 class="title is-3">
                     Nova Transação
-                </h4>
+                </h3>
 
                 <form action="processa.php" method="POST">
                     <div class="field">
@@ -79,9 +79,9 @@ $carteira = $_SESSION['carteira'];
                         </div>
                     </div>
 
-                    <div class="field">
+                    <div class="field ">
                         <div class="control">
-                            <button class="button is-primary">Salvar</button>
+                            <button class="button is-link" style="width: 200px;">Adicionar</button>
                         </div>
                     </div>
 
@@ -89,24 +89,24 @@ $carteira = $_SESSION['carteira'];
                 </form>
             </div>
 
-            <div>
-                <h4 class="title is-4">Extrato</h4>
+            <div class="mt-6">
+                <h3 class="title is-3">Extrato</h3>
 
                 <table class="table is-striped is-hoverable is-fullwidth">
                     <tr>
-                        <th>Valor</th>
-                        <th>Tipo</th>
-                        <th>Descrição</th>
-                        <th>Data</th>
+                        <th class="title is-4">Valor</th>
+                        <th class="title is-4">Tipo</th>
+                        <th class="title is-4">Descrição</th>
+                        <th class="title is-4">Data</th>
                     </tr>
 
                     <tr>
                         <?php foreach ($carteira->getTransacoes() as $t): ?>
 
                         <tr>
-                            <td><b><?php $r = number_format($t->getValor(), 2, ',', '.'); 
+                            <td class="subtitle is-6"><b><?php $r = number_format($t->getValor(), 2, ',', '.'); 
                             echo ("R$$r");?></b></td>
-                            <td>
+                            <td class="subtitle is-6">
                                 <?php if ($t->getTipo() == "Entrada"): ?>
                                     <span class="tag is-success">
                                         Receita
@@ -117,8 +117,8 @@ $carteira = $_SESSION['carteira'];
                                     </span>
                                 <?php endif; ?>
                             </td>
-                            <td><?= $t->getDescricao(); ?></td>
-                            <td><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
+                            <td class="subtitle is-6"><?= $t->getDescricao(); ?></td>
+                            <td class="subtitle is-6"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
                         </tr>
 
                     <?php endforeach; ?>
