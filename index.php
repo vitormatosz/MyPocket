@@ -28,7 +28,21 @@ $carteira = $_SESSION['carteira'];
     <section class="section">
         <div class="container">
 
-            <h1 class="title is-1">MyPocket</h1>
+            <div class="is-flex is-align-items-center mb-5">
+                <span class="mr-4">
+                        <img src="wallet.png" alt="Logo" style="width: 120px; height: 120px;">
+                </span>
+
+                <div>
+                    <h1 class="title is-1">
+                        MyPocket
+                    </h1>
+
+                    <p class="subtitle is-5">
+                        Controle financeiro pessoal
+                    </p>
+                </div>
+            </div>
 
             <div class="box has-background-link-65">
                 <h2 class="subtitle has-text-primary-15-invert">Saldo Atual</h2>
@@ -81,8 +95,7 @@ $carteira = $_SESSION['carteira'];
 
                     <div class="field ">
                         <div class="control">
-                            <button class="button is-link"
-                                style="width: 200px;">Adicionar</button>
+                            <button class="button is-link" style="width: 200px;">Adicionar</button>
                         </div>
                     </div>
 
@@ -111,14 +124,14 @@ $carteira = $_SESSION['carteira'];
                     <div class="column">
                         <div class="notification is-success has-text-primary-15-invert">
                             <b>Total Receitas:<br>
-                            <span class="title is-3">R$ <?= number_format($totalReceitas, 2, ',', '.') ?></span></b>
+                                <span class="title is-3">R$ <?= number_format($totalReceitas, 2, ',', '.') ?></span></b>
                         </div>
                     </div>
 
                     <div class="column">
                         <div class="notification is-danger has-text-primary-15-invert">
                             <b>Total Despesas:<br>
-                            <span class="title is-3">R$ <?= number_format($totalDespesas, 2, ',', '.') ?></span></b>
+                                <span class="title is-3">R$ <?= number_format($totalDespesas, 2, ',', '.') ?></span></b>
                         </div>
                     </div>
                 </div>
