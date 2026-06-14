@@ -105,8 +105,8 @@ $carteira = $_SESSION['carteira'];
             </div>
         </div>
 
-        <div class="mt-6" id="extrato">
-            <h3 class="mb-4"><b>Extrato</b></h3>
+        <div class="mt-8" id="extrato">
+            <h3 class="mb-4 h1"><b>Extrato</b></h3>
 
             <?php
             $totalReceitas = 0;
