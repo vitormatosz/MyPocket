@@ -21,6 +21,13 @@ try {
     $valor = (float) $_POST['valor'];
     $data = $_POST['data'];
 
+    $dataMin = ("2026-01-01");
+    $dataMax = ("2026-12-31");
+
+    if($data < $dataMin || $data > $dataMax){
+        throw new Exception("Data inválida");
+    }
+
     if ($tipo === "receita") {
         $transacao = new Receita($valor, $descricao, $data);
     } else {

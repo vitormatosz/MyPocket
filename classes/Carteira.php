@@ -14,12 +14,9 @@ class Carteira{
     }
 
     public function addTransacoes(Transacao $transacao): void{
-        if($transacao instanceof Receita){
+        if($transacao->getTipo() === "Entrada"){
             $this->saldo += $transacao->getValor();
-        }
-
-        if($transacao instanceof Despesa){
-
+        } else {
             if($transacao->getValor() > $this->saldo){
                throw new Exception("Saldo Insuficente!");
             }
