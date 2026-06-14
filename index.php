@@ -200,7 +200,6 @@ $carteira = $_SESSION['carteira'];
                     </tr>
                 </table>
 
-                <a href="limpar.php" class="btn btn-danger">Resetar Carteira</a>
             </div>
         </div>
     </section>
