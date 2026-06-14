@@ -10,6 +10,10 @@ abstract class Transacao
 
     public function __construct(float $valor, string $descricao, string $data)
     {
+        if ($valor < 0) {
+            throw new Exception("O valor deve ser maior que zero.");
+            
+        }
         $this->valor = $valor;
         $this->descricao = $descricao;
         $this->data = $data;

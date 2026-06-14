@@ -1,21 +1,27 @@
 <?php
 
+
 require_once 'classes/Transacao.php';
 require_once 'classes/Receita.php';
 require_once 'classes/Despesa.php';
 require_once 'classes/Carteira.php';
 
+
 session_start();
+
 
 if (!isset($_SESSION['carteira'])) {
     $_SESSION['carteira'] = new Carteira();
 }
 
+
 $carteira = $_SESSION['carteira'];
 ?>
 
+
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="dark">
+
 
 <head>
     <meta charset="UTF-8">
@@ -24,19 +30,23 @@ $carteira = $_SESSION['carteira'];
     <title>Projeto Final PW2 - MyPocket</title>
 </head>
 
+
 <body>
     <section class="section">
         <div class="container">
 
+
             <div class="is-flex is-align-items-center mb-5">
                 <span class="mr-4">
-                        <img src="wallet.png" alt="Logo" style="width: 120px; height: 120px;">
+                    <img src="wallet.png" alt="Logo" style="width: 120px; height: 120px;">
                 </span>
+
 
                 <div>
                     <h1 class="title is-1">
                         MyPocket
                     </h1>
+
 
                     <p class="subtitle is-5">
                         Controle financeiro pessoal
@@ -44,31 +54,53 @@ $carteira = $_SESSION['carteira'];
                 </div>
             </div>
 
+
+            <?php if (isset($_SESSION['erro'])): ?>
+
+
+                <div class="notification is-danger">
+                    <?= $_SESSION['erro']; ?>
+                </div>
+
+
+                <?php unset($_SESSION['erro']); ?>
+
+
+            <?php endif; ?>
+
+
             <div class="box has-background-link-65">
                 <h2 class="subtitle has-text-primary-15-invert">Saldo Atual</h2>
+
 
                 <p class="title is-1">
                     R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?>
                 </p>
             </div>
 
+
             <div class="box mt-6">
+
 
                 <h3 class="title is-3">
                     Nova Transação
                 </h3>
 
+
                 <form action="processa.php" method="POST">
                     <div class="field">
                         <label class="label">Valor</label>
+
 
                         <div class="control">
                             <input class="input" step="0.01" type="number" name="valor" required>
                         </div>
                     </div>
 
+
                     <div class="field">
                         <label class="label">Tipo</label>
+
 
                         <div class="control">
                             <div class="select">
@@ -80,11 +112,13 @@ $carteira = $_SESSION['carteira'];
                         </div>
                     </div>
 
+
                     <div class="field">
                         <label class="label">Descrição</label>
                         <div class="control"><input class="input" type="text" name="descricao" required>
                         </div>
                     </div>
+
 
                     <div class="field">
                         <label class="label">Data</label>
@@ -93,6 +127,7 @@ $carteira = $_SESSION['carteira'];
                         </div>
                     </div>
 
+
                     <div class="field ">
                         <div class="control">
                             <button class="button is-link" style="width: 200px;">Adicionar</button>
@@ -100,17 +135,23 @@ $carteira = $_SESSION['carteira'];
                     </div>
 
 
+
+
                 </form>
             </div>
 
+
             <div class="mt-6" id="extrato">
                 <h3 class="title is-3">Extrato</h3>
+
 
                 <?php
                 $totalReceitas = 0;
                 $totalDespesas = 0;
 
+
                 foreach ($carteira->getTransacoes() as $t) {
+
 
                     if ($t->getTipo() == "Entrada") {
                         $totalReceitas += $t->getValor();
@@ -120,6 +161,7 @@ $carteira = $_SESSION['carteira'];
                 }
                 ?>
 
+
                 <div class="columns">
                     <div class="column">
                         <div class="notification is-success has-text-primary-15-invert">
@@ -127,6 +169,7 @@ $carteira = $_SESSION['carteira'];
                                 <span class="title is-3">R$ <?= number_format($totalReceitas, 2, ',', '.') ?></span></b>
                         </div>
                     </div>
+
 
                     <div class="column">
                         <div class="notification is-danger has-text-primary-15-invert">
@@ -138,12 +181,18 @@ $carteira = $_SESSION['carteira'];
 
 
 
+
+
+
                 <?php $filtro = $_GET['filtro'] ?? ''; ?>
+
 
                 <form method="GET" action="#extrato" class="mt-6">
 
+
                     <div class="field">
                         <label class="label is-size-4">Filtrar</label>
+
 
                         <div class="select is-medium">
                             <select name="filtro">
@@ -153,13 +202,17 @@ $carteira = $_SESSION['carteira'];
                             </select>
                         </div>
 
+
                         <button class="button is-medium is-link">
                             Filtrar
                         </button>
 
+
                     </div>
 
+
                 </form>
+
 
                 <table class="table is-striped is-hoverable is-fullwidth mt-3">
                     <tr>
@@ -169,11 +222,15 @@ $carteira = $_SESSION['carteira'];
                         <th class="title is-4">Data</th>
                     </tr>
 
+
                     <tr>
+
 
                         <?php foreach ($carteira->getTransacoes() as $t): ?>
 
+
                             <?php if ($filtro == '' || $t->getTipo() == $filtro): ?>
+
 
                             <tr>
                                 <td class="subtitle is-5"><?php $r = number_format($t->getValor(), 2, ',', '.');
@@ -193,16 +250,21 @@ $carteira = $_SESSION['carteira'];
                                 <td class="subtitle is-5"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
                             </tr>
 
+
                         <?php endif; ?>
+
 
                     <?php endforeach; ?>
 
+
                     </tr>
                 </table>
+
 
             </div>
         </div>
     </section>
 </body>
+
 
 </html>
