@@ -1,5 +1,4 @@
 <?php
-
 require_once 'classes/Transacao.php';
 require_once 'classes/Receita.php';
 require_once 'classes/Despesa.php';
@@ -13,189 +12,191 @@ if (!isset($_SESSION['carteira'])) {
 
 $carteira = $_SESSION['carteira'];
 ?>
-
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.8/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@1.0.4/css/bulma.min.css">
     <title>Projeto Final PW2 - MyPocket</title>
 </head>
 
-<body class="text-bg-dark">
+<body>
+    <section class="section">
+        <div class="container">
+            <div class="is-flex is-align-items-center mb-5">
+                <span class="mr-4">
+                    <img src="wallet.png" alt="Logo" style="width: 120px; height: 120px;">
+                </span>
+                <div>
+                    <h1 class="title is-1">
+                        MyPocket
+                    </h1>
 
-    <div class="container py-5">
-        <div class="card-body mb-4 gap-2 d-flex align-items-end">
-            <span>
-                <img src="wallet.png" alt="Logo" style="width: 130px; height: 130px;">
-            </span>
-
-            <div>
-                <h1 class="h1"><b>MyPocket</b></h1>
-                <p class="fs-5">
-                    Controle financeiro pessoal
-                </p>
+                    <p class="subtitle is-5">
+                        Controle financeiro pessoal
+                    </p>
+                </div>
             </div>
-        </div>
 
-        <?php if (isset($_SESSION['erro'])): ?>
-            <div class="alert alert-danger fs-6">
-                <?= $_SESSION['erro']; ?>
+            <?php if (isset($_SESSION['erro'])): ?>
+            <div class="notification is-danger is-5">
+                <b><?= $_SESSION['erro']; ?></b>
             </div>
 
             <?php unset($_SESSION['erro']); ?>
         <?php endif; ?>
 
         <?php if (isset($_SESSION['mensagem'])): ?>
-            <div class="alert alert-success fs-6">
-                <?= $_SESSION['mensagem']; ?>
+            <div class="notification is-success is-5">
+                <b><?= $_SESSION['mensagem']; ?></b>
             </div>
 
             <?php unset($_SESSION['mensagem']); ?>
         <?php endif; ?>
 
-
-        <div class="card bg-primary text-white shadow-lg mb-5 rounded m-0">
-            <div class="card-body p-3">
-                <p class="mb-0">
-                    <span class="fs-5">Saldo Atual:</span><br>
-                    <span class="h1"><b>R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?></b></span>
+            <div class="box has-background-link">
+                <h2 class="subtitle has-text-primary-15-invert">Saldo Atual</h2>
+                <p class="title is-1">
+                    R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?>
                 </p>
             </div>
-        </div>
 
-        <div class="card text-bg-dark shadow-lg rounded mb-4 p-2">
-            <div class="card-body">
-
-                <h3 class="h3">
-                    <b>Nova Transação</b>
+            <div class="box mt-6">
+                <h3 class="title is-3">
+                    Nova Transação
                 </h3>
 
-                <form data-bs-theme="dark" class="bg-dark text-white" action="processa.php" method="POST">
-                    <div class="mb-3">
+                <form action="processa.php" method="POST">
+                    <div class="field">
                         <label class="label">Valor</label>
-                        <input class="form-control" step="0.01" type="number" name="valor" required>
+                        <div class="control">
+                            <input class="input" step="0.01" type="number" name="valor" required>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="field">
                         <label class="label">Tipo</label>
-                        <select class="form-select" name="tipo" required>
-                            <option value="receita">Receita</option>
-                            <option value="despesa">Despesa</option>
-                        </select>
+                        <div class="control">
+                            <div class="select">
+                                <select name="tipo" required>
+                                    <option value="receita">Receita</option>
+                                    <option value="despesa">Despesa</option>
+                                </select>
+                            </div>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="field">
                         <label class="label">Descrição</label>
-                        <input class="form-control" type="text" name="descricao" required>
+                        <div class="control"><input class="input" type="text" name="descricao" required>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
+                    <div class="field">
                         <label class="label">Data</label>
-                        <input class="form-control" type="date" name="data" required>
+                        <div class="control">
+                            <input class="input" type="date" name="data" required>
+                        </div>
                     </div>
 
-                    <div class="mb-3">
-                        <button class="btn btn-primary">Adicionar</button>
+                    <div class="field ">
+                        <div class="control">
+                            <button class="button is-link" style="width: 200px;">Adicionar</button>
+                        </div>
                     </div>
-
                 </form>
             </div>
-        </div>
 
-        <div class="mt-8" id="extrato">
-            <h3 class="mb-4 h1"><b>Extrato</b></h3>
+            <div class="mt-6" id="extrato">
+                <h3 class="title is-3">Extrato</h3>
 
-            <?php
-            $totalReceitas = 0;
-            $totalDespesas = 0;
+                <?php
+                $totalReceitas = 0;
+                $totalDespesas = 0;
 
-            foreach ($carteira->getTransacoes() as $t) {
-                if ($t->getTipo() == "Entrada") {
-                    $totalReceitas += $t->getValor();
-                } else {
-                    $totalDespesas += $t->getValor();
+                foreach ($carteira->getTransacoes() as $t) {
+                    if ($t->getTipo() == "Entrada") {
+                        $totalReceitas += $t->getValor();
+                    } else {
+                        $totalDespesas += $t->getValor();
+                    }
                 }
-            }
-            ?>
+                ?>
 
-            <div class="row">
-                <div class="col-md-6">
-                    <div class="alert alert-success">
-                        <b>Total Receitas:<br></b>
-                        <span class="h3"><b>R$ <?= number_format($totalReceitas, 2, ',', '.') ?></b></span>
+                <div class="columns">
+                    <div class="column">
+                        <div class="notification is-success has-text-primary-15-invert">
+                            <b>Total Receitas:<br>
+                                <span class="title is-3">R$ <?= number_format($totalReceitas, 2, ',', '.') ?></span></b>
+                        </div>
+                    </div>
+
+                    <div class="column">
+                        <div class="notification is-danger has-text-primary-15-invert">
+                            <b>Total Despesas:<br>
+                                <span class="title is-3">R$ <?= number_format($totalDespesas, 2, ',', '.') ?></span></b>
+                        </div>
                     </div>
                 </div>
 
-                <div class="col-md-6">
-                    <div class="alert alert-danger">
-                        <b>Total Despesas:<br></b>
-                        <span class="h3"><b>R$ <?= number_format($totalDespesas, 2, ',', '.') ?></span></b>
-                    </div>
-                </div>
-            </div>
+                <?php if (isset($_GET['filtro'])) {
+                    $filtro = $_GET['filtro'];
+                } else {
+                    $filtro = '';
+                } ?>
 
-            <?php if (isset($_GET['filtro'])) {
-                $filtro = $_GET['filtro'];
-            } else {
-                $filtro = '';
-            } ?>
+                <form method="GET" action="#extrato" class="mt-6">
+                    <div class="field">
+                        <label class="label is-size-4">Filtrar</label>
+                        <div class="select is-medium">
+                            <select name="filtro">
+                                <option value="">Todos</option>
+                                <option value="Entrada">Receitas</option>
+                                <option value="Saida">Despesas</option>
+                            </select>
+                        </div>
 
-            <form data-bs-theme="dark" class="bg-dark text-white" method="GET" action="#extrato" class="mt-6">
-
-                <div class="mb-3 d-flex-flex-column">
-                    <label class="label">Filtrar</label>
-
-                    <div class="mt-2 d-flex gap-2 align-items-center">
-                        <select class="form-select w-auto d-inline-block" name="filtro">
-                            <option value="">Todos</option>
-                            <option value="Entrada">Receitas</option>
-                            <option value="Saida">Despesas</option>
-                        </select>
-
-                        <button class="btn btn-primary">
+                        <button class="button is-medium is-link">
                             Filtrar
                         </button>
                     </div>
-                </div>
-            </form>
+                </form>
 
-            <table class="table table-striped table-hover mt-3 table-dark">
-                <tr>
-                    <th class="h4">Valor</th>
-                    <th class="h4">Tipo</th>
-                    <th class="h4">Descrição</th>
-                    <th class="h4">Data</th>
-                </tr>
-                <tr>
-                    <?php foreach ($carteira->getTransacoes() as $t): ?>
-                        <?php if ($filtro == '' || $t->getTipo() == $filtro): ?>
-
-                        <tr>
-                            <td class="fs-6"><?php $r = number_format($t->getValor(), 2, ',', '.');
-                            echo ("R$$r"); ?></td>
-                            <td class="fs-6">
-                                <?php if ($t->getTipo() == "Entrada"): ?>
-                                    <span class="badge bg-success">
-                                        Receita
-                                    </span>
-                                <?php else: ?>
-                                    <span class="badge bg-danger">
-                                        Despesa
-                                    </span>
-                                <?php endif; ?>
-                            </td>
-                            <td class="fs-6"><?= $t->getDescricao(); ?></td>
-                            <td class="fs-6"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
-                        </tr>
-                    <?php endif; ?>
-                <?php endforeach; ?>
-                </tr>
-            </table>
+                <table class="table is-striped is-hoverable is-fullwidth mt-3">
+                    <tr>
+                        <th class="title is-4">Valor</th>
+                        <th class="title is-4">Tipo</th>
+                        <th class="title is-4">Descrição</th>
+                        <th class="title is-4">Data</th>
+                    </tr>
+                    <tr>
+                        <?php foreach ($carteira->getTransacoes() as $t): ?>
+                            <?php if ($filtro == '' || $t->getTipo() == $filtro): ?>
+                            <tr>
+                                <td class="subtitle is-5"><?php $r = number_format($t->getValor(), 2, ',', '.');
+                                echo ("R$$r"); ?></td>
+                                <td class="subtitle is-5">
+                                    <?php if ($t->getTipo() == "Entrada"): ?>
+                                        <span class="tag is-success has-text-primary-15-invert is-size-6">
+                                            Receita
+                                        </span>
+                                    <?php else: ?>
+                                        <span class="tag is-danger has-text-primary-15-invert is-size-6">
+                                            Despesa
+                                        </span>
+                                    <?php endif; ?>
+                                </td>
+                                <td class="subtitle is-5"><?= $t->getDescricao(); ?></td>
+                                <td class="subtitle is-5"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
+                            </tr>
+                        <?php endif; ?>
+                    <?php endforeach; ?>
+                    </tr>
+                </table>
+            </div>
         </div>
-    </div>
     </section>
 </body>
 
