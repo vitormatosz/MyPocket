@@ -6,6 +6,8 @@ require_once 'classes/Carteira.php';
 
 session_start();
 
+require_once 'database/conexao.php';
+
 if (!isset($_SESSION['carteira'])) {
     $_SESSION['carteira'] = new Carteira();
 }
@@ -81,8 +83,8 @@ $carteira = $_SESSION['carteira'];
                         <div class="control">
                             <div class="select">
                                 <select name="tipo" required>
-                                    <option value="receita">Receita</option>
-                                    <option value="despesa">Despesa</option>
+                                    <option value="Entrada">Receita</option>
+                                    <option value="Saida">Despesa</option>
                                 </select>
                             </div>
                         </div>
