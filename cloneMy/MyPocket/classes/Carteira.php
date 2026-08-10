@@ -1,0 +1,40 @@
+<?php
+
+declare(strict_types=1);
+
+require_once "Despesa.php";
+require_once "Receita.php";
+
+class Carteira{
+    private float $saldo;
+    private array $transacoes;
+    public function __construct(){
+        $this->saldo = 0;
+        $this->transacoes = [];
+    }
+
+    public function addTransacoes(Transacao $transacao): void{
+        if($transacao->getTipo() === "Entrada"){
+            $this->saldo += $transacao->getValor();
+        } else {
+            if($transacao->getValor() > $this->saldo){
+               throw new Exception("Saldo Insuficente!");
+            }
+
+            $this->saldo -= $transacao->getValor();
+        }
+
+    $this->transacoes[] = $transacao;
+
+    }
+
+    public function getSaldo(): float
+    {
+        return $this->saldo;
+    }
+
+    public function getTransacoes(): array{
+        return $this->transacoes;
+    }
+}
+?>
