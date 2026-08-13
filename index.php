@@ -13,7 +13,26 @@ if (!isset($_SESSION['carteira'])) {
 }
 
 $carteira = $_SESSION['carteira'];
+
+$carteira = new Carteira();
+
+$stmt = $pdo->query("SELECT * FROM transacoes");
+$transacoesBanco = $stmt;
+
+foreach ($transacoesBanco as $row) {
+    if ($row['tipo'] === "Entrada") {
+        $t = new Receita((float) $row['valor'], $row['descricao'], $row['data']);
+    } else {
+        $t = new Despesa((float) $row['valor'], $row['descricao'], $row['data']);
+    }
+
+    try {
+        $carteira->addTransacoes($t);
+    } catch (Exception $e) {
+    }
+}
 ?>
+
 <!DOCTYPE html>
 <html lang="pt-br" data-theme="dark">
 
@@ -43,20 +62,20 @@ $carteira = $_SESSION['carteira'];
             </div>
 
             <?php if (isset($_SESSION['erro'])): ?>
-            <div class="notification is-danger is-5">
-                <b><?= $_SESSION['erro']; ?></b>
-            </div>
+                <div class="notification is-danger is-5">
+                    <b><?= $_SESSION['erro']; ?></b>
+                </div>
 
-            <?php unset($_SESSION['erro']); ?>
-        <?php endif; ?>
+                <?php unset($_SESSION['erro']); ?>
+            <?php endif; ?>
 
-        <?php if (isset($_SESSION['mensagem'])): ?>
-            <div class="notification is-success is-5">
-                <b><?= $_SESSION['mensagem']; ?></b>
-            </div>
+            <?php if (isset($_SESSION['mensagem'])): ?>
+                <div class="notification is-success is-5">
+                    <b><?= $_SESSION['mensagem']; ?></b>
+                </div>
 
-            <?php unset($_SESSION['mensagem']); ?>
-        <?php endif; ?>
+                <?php unset($_SESSION['mensagem']); ?>
+            <?php endif; ?>
 
             <div class="box has-background-link">
                 <h2 class="subtitle has-text-primary-15-invert">Saldo Atual</h2>
@@ -192,6 +211,12 @@ $carteira = $_SESSION['carteira'];
                                 </td>
                                 <td class="subtitle is-5"><?= $t->getDescricao(); ?></td>
                                 <td class="subtitle is-5"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
+                                <td>
+                                    <a class="button is-small is-warning">Editar</a>
+
+                                    <a class="button is-small is-danger"
+                                        onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</a>
+                                </td>
                             </tr>
                         <?php endif; ?>
                     <?php endforeach; ?>

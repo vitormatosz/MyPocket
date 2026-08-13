@@ -36,6 +36,8 @@ try {
         $transacao = new Despesa($valor, $descricao, $data);
     }
 
+    $carteira->addTransacoes($transacao);
+
     $sql = "
         INSERT INTO transacoes (valor, tipo, descricao, data)
         VALUES (:valor, :tipo, :descricao, :data)
