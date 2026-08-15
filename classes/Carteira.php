@@ -36,5 +36,16 @@ class Carteira{
     public function getTransacoes(): array{
         return $this->transacoes;
     }
+
+    public function carregarTransacao(Transacao $transacao): void
+{
+    $this->transacoes[] = $transacao;
+
+    if ($transacao->getTipo() == "Entrada") {
+        $this->saldo += $transacao->getValor();
+    } else {
+        $this->saldo -= $transacao->getValor();
+    }
+}
 }
 ?>

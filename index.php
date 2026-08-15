@@ -8,28 +8,21 @@ session_start();
 
 require_once 'database/conexao.php';
 
-if (!isset($_SESSION['carteira'])) {
-    $_SESSION['carteira'] = new Carteira();
-}
-
-$carteira = $_SESSION['carteira'];
-
 $carteira = new Carteira();
 
 $stmt = $pdo->query("SELECT * FROM transacoes");
-$transacoesBanco = $stmt;
+$transacoesWorkbanch = $stmt;
 
-foreach ($transacoesBanco as $row) {
-    if ($row['tipo'] === "Entrada") {
-        $t = new Receita((float) $row['valor'], $row['descricao'], $row['data']);
+foreach ($transacoesWorkbanch as $param) {
+    if ($param['tipo'] === "Entrada") {
+        $t = new Receita((float) $param['valor'], $param['descricao'], $param['data']);
     } else {
-        $t = new Despesa((float) $row['valor'], $row['descricao'], $row['data']);
+        $t = new Despesa((float) $param['valor'], $param['descricao'], $param['data']);
     }
 
-    try {
-        $carteira->addTransacoes($t);
-    } catch (Exception $e) {
-    }
+    $t->setId((int) $param['id']);
+
+    $carteira->carregarTransacao($t);
 }
 ?>
 
@@ -212,9 +205,9 @@ foreach ($transacoesBanco as $row) {
                                 <td class="subtitle is-5"><?= $t->getDescricao(); ?></td>
                                 <td class="subtitle is-5"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
                                 <td>
-                                    <a class="button is-small is-warning">Editar</a>
+                                    <a href="editar.php?id=<?= $t->getId() ?>" class="button is-small is-warning">Editar</a>
 
-                                    <a class="button is-small is-danger"
+                                    <a href="delete.php?id=<?= $t->getId() ?>" class="button is-small is-danger"
                                         onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</a>
                                 </td>
                             </tr>
@@ -223,8 +216,6 @@ foreach ($transacoesBanco as $row) {
                     </tr>
                 </table>
             </div>
-        </div>
-    </section>
 </body>
 
 </html>

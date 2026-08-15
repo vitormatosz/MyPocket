@@ -10,11 +10,29 @@ session_start();
 
 require_once 'database/conexao.php';
 
-if (!isset($_SESSION['carteira'])) {
-    $_SESSION['carteira'] = new Carteira();
+$carteira = new Carteira();
+
+$stmt = $pdo->query("SELECT * FROM transacoes");
+
+foreach ($stmt as $row) {
+
+    if ($row['tipo'] === "Entrada") {
+        $t = new Receita(
+            (float) $row['valor'],
+            $row['descricao'],
+            $row['data']
+        );
+    } else {
+        $t = new Despesa(
+            (float) $row['valor'],
+            $row['descricao'],
+            $row['data']
+        );
+    }
+
+    $carteira->carregarTransacao($t);
 }
 
-$carteira = $_SESSION['carteira'];
 
 try {
 
@@ -60,8 +78,6 @@ try {
     $_SESSION['erro'] = $e->getMessage();
 
 }
-
-$_SESSION['carteira'] = $carteira;
 
 header("Location: index.php");
 exit;

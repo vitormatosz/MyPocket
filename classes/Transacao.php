@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 abstract class Transacao
 {
+    protected int $id;
     protected float $valor;
     protected string $descricao;
     protected string $data;
@@ -12,7 +13,6 @@ abstract class Transacao
     {
         if ($valor <=  0) {
             throw new Exception("O valor deve ser maior que zero!");
-            
         }
         $this->valor = $valor;
         $this->descricao = $descricao;
@@ -33,5 +33,13 @@ public function getData(): string{
 
 abstract public function getTipo(): string;
 
+public function getId(): int{
+    return $this->id;
+}
+
+public function setId(int $id): void
+{
+    $this->id = $id;
+}
 }
 ?>
