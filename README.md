@@ -31,6 +31,18 @@ Permite registrar entradas de dinheiro, informando descrição, valor e data da 
 
 Permite registrar gastos realizados pelo usuário, atualizando automaticamente o saldo da carteira.
 
+#### ✏️ Edição de Transações
+
+Permite alterar o valor, tipo, descrição ou data de uma transação já cadastrada, recalculando o saldo automaticamente.
+
+#### 🗑️ Exclusão de Transações
+
+Permite remover uma transação do histórico, com o saldo sendo atualizado automaticamente após a exclusão.
+
+#### 🔎 Filtro de Extrato
+
+Permite filtrar o histórico de transações exibindo apenas receitas, apenas despesas, ou todas as movimentações.
+
 #### 📊 Controle Automático de Saldo
 
 O saldo é atualizado sempre que uma nova receita ou despesa é adicionada, evitando cálculos manuais.
@@ -41,11 +53,46 @@ Todas as movimentações ficam registradas em uma lista organizada, permitindo o
 
 #### ✅ Validação de Dados
 
-O sistema impede operações inválidas, como valores negativos ou informações incompletas, garantindo maior segurança e confiabilidade.
+O sistema impede operações inválidas, como valores negativos, informações incompletas ou datas fora do período permitido, garantindo maior segurança e confiabilidade.
+
+#### 🔒 Proteção contra Saldo Negativo
+
+Antes de confirmar uma nova transação, uma edição ou uma exclusão, o sistema recalcula o saldo resultante da operação. Caso o saldo ficasse negativo, a operação é bloqueada e uma mensagem de erro é exibida ao usuário.
 
 #### 🗑️ Gerenciamento de Registros
 
 Possibilita visualizar e organizar as transações registradas pelo usuário.
+
+---
+
+### 🗄️ Banco de Dados
+
+O projeto utiliza **MySQL**, acessado via **PDO**, com a conexão configurada em `database/conexao.php`.
+
+Banco: `sistema_crud`
+
+Tabela principal: `transacoes`, com as colunas:
+
+| Coluna     | Tipo                  | Descrição                          |
+|------------|-----------------------|-------------------------------------|
+| id         | INT (auto increment)  | Identificador único da transação    |
+| valor      | DECIMAL / FLOAT        | Valor da movimentação               |
+| tipo       | VARCHAR                | `"Entrada"` (receita) ou `"Saida"` (despesa) |
+| descricao  | VARCHAR                | Descrição da movimentação           |
+| data       | DATE                    | Data da movimentação                |
+
+O saldo da carteira **não é armazenado diretamente no banco** — ele é sempre recalculado a partir da soma de todas as transações cadastradas, garantindo que o valor exibido esteja sempre consistente com o histórico.
+
+---
+
+### 🔄 CRUD
+
+O sistema implementa as quatro operações básicas sobre a tabela `transacoes`:
+
+* **Create**: cadastra uma nova receita ou despesa, validando o valor, a data e se a operação não deixaria o saldo negativo antes de inserir no banco.
+* **Read**: busca todas as transações do banco e exibe o saldo atual, os totais de receitas/despesas e o extrato completo, com opção de filtro.
+* **Update**: permite alterar uma transação existente, recalculando o saldo que resultaria da alteração antes de confirmar a atualização.
+* **Delete**: remove uma transação do banco, verificando antes se a exclusão não deixaria o saldo negativo.
 
 ---
 
@@ -72,9 +119,10 @@ O projeto foi desenvolvido seguindo os princípios da Programação Orientada a 
 ### 🖥️ Tecnologias Utilizadas
 
 * PHP
+* MySQL (via PDO)
 * HTML5
 * CSS3
-* Bootstrap 5
+* Bulma
 * Programação Orientada a Objetos (POO)
 
 ---
