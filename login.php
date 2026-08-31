@@ -15,9 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
         $stmt->execute([':email' => $emailForm]);
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        // Verifica se o usuário existe e se a senha está correta
-        // (Funciona com senhas criptografadas via password_hash ou texto puro)
-        if ($usuario && (password_verify($senhaForm, $usuario['nome']) || $senhaForm === $usuario['nome'])) {
+        if ($usuario && (password_verify($senhaForm, $usuario['senha']) || $senhaForm === $usuario['senha'])) {
             // Redireciona para a carteira passando o ID do usuário na URL
             header("Location: index.php?usuario_id=" . $usuario['id']);
             exit;
@@ -45,10 +43,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
             <div class="container">
                 <div class="columns is-centered">
                     <div class="column is-6-desktop is-6-tablet">
-
-                    <div class="notification is-danger is-5">
-                                <b><?= $erro; ?></b>
-                            </div>
 
                         <div class="card p-6">
                             <h3 class="title is-3 has-text-start">Entrar</h3>

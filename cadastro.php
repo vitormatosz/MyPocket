@@ -6,10 +6,11 @@ require_once 'database/conexao.php';
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'cadastrar') {
     $nome = trim($_POST['nome']);
     $email = trim($_POST['email']);
+    $senha = trim($_POST['senha']);
 
     if (!empty($nome) && !empty($email)) {
-        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email) VALUES (:nome, :email)");
-        $stmt->execute(['nome' => $nome, 'email' => $email]);
+        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha) VALUES (:nome, :email, :senha)");
+        $stmt->execute(['nome' => $nome, 'email' => $email, 'senha' => $senha]);
         header('Location: login.php');
         exit;
     }
@@ -42,11 +43,25 @@ $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
              <input class="input" type="text" name="nome" placeholder="Nome" required>
             </div>
         </div>
+
         <div class="field">
             <div class="control">
         <input class="input" type="email" name="email" placeholder="E-mail" required>
             </div>
         </div>
+
+        <div class="field">
+            <div class="control">
+        <input class="input" type="password" name="senha" placeholder="Senha" required>
+            </div>
+        </div>
+
+        <div class="field">
+            <div class="control">
+        <input class="input" type="password" name="conf" placeholder="Confirmar Senha" required>
+            </div>
+        </div>
+
         <div class="field">
             <div class="control">
         <button class="button is-link" type="submit">Salvar</button>
