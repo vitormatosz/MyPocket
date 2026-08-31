@@ -5,7 +5,7 @@ session_start();
 require_once "database/conexao.php";
 
 $id = $_GET["id"] ?? null;
-
+//DELETE TRANSAÇÔES
 if ($id) {
     // Busca a transação que será excluída
     $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id");
@@ -41,6 +41,16 @@ if ($id) {
     }
 }
 
-header("Location: index.php");
+//DELETE USUÁRIOS
+
+if ($id) {
+    // D - DELETE: Remover do banco
+    $stmt = $pdo->prepare("DELETE FROM usuarios WHERE id = :id");
+    $stmt->execute(['id' => $id]);
+    header('Location: cadastro.php');
+exit;
+}
+
+header('Location: index.php');
 exit;
 ?>

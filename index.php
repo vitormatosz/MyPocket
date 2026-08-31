@@ -39,6 +39,7 @@ foreach ($transacoesWorkbanch as $param) {
 <body>
     <section class="section">
         <div class="container">
+
             <div class="is-flex is-align-items-center mb-5">
                 <span class="mr-4">
                     <img src="wallet.png" alt="Logo" style="width: 120px; height: 120px;">
@@ -52,6 +53,11 @@ foreach ($transacoesWorkbanch as $param) {
                         Controle financeiro pessoal
                     </p>
                 </div>
+            </div>
+            <div class="field">
+                <div class="control">
+                <a href="login.php" class="button is-link">Sair</a>
+            </div>
             </div>
 
             <?php if (isset($_SESSION['erro'])): ?>
