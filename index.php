@@ -1,5 +1,6 @@
 <?php
 require_once 'classes/Transacao.php';
+require_once 'classes/Diario.php';
 require_once 'classes/Receita.php';
 require_once 'classes/Despesa.php';
 require_once 'classes/Carteira.php';
@@ -16,6 +17,8 @@ $transacoesWorkbanch = $stmt;
 foreach ($transacoesWorkbanch as $param) {
     if ($param['tipo'] === "Entrada") {
         $t = new Receita((float) $param['valor'], $param['descricao'], $param['data']);
+    } else if ($param['tipo'] === "Diario") {
+        $t = new Diario((float) $param['valor'], $param['descricao'], $param['data']);
     } else {
         $t = new Despesa((float) $param['valor'], $param['descricao'], $param['data']);
     }
@@ -42,7 +45,7 @@ foreach ($transacoesWorkbanch as $param) {
 
             <div class="is-flex is-align-items-center mb-5">
                 <span class="mr-4">
-                    <img src="wallet.png" alt="Logo" style="width: 120px; height: 120px;">
+                    <img src="assets/wallet.png" alt="Logo" style="width: 120px; height: 120px;">
                 </span>
                 <div>
                     <h1 class="title is-1">
@@ -60,27 +63,32 @@ foreach ($transacoesWorkbanch as $param) {
                 </div>
             </div>
 
-            <?php if (isset($_SESSION['erro'])): ?>
-                <div class="notification is-danger is-5">
-                    <b><?= $_SESSION['erro']; ?></b>
+            <div class="columns mb-5">
+                <div class="column is-4 is-flex">
+                    <div
+                        class="box has-background-link is-flex-grow-1 is-flex is-flex-direction-column is-justify-content-center">
+                        <h2 class="subtitle has-text-primary-15-invert">Saldo Atual</h2>
+                        <p class="title is-1">
+                            R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?>
+                        </p>
+                    </div>
                 </div>
 
-                <?php unset($_SESSION['erro']); ?>
-            <?php endif; ?>
+                <div class="column is-8 is-flex">
+                    <?php if (isset($_SESSION['erro'])): ?>
+                        <div class="notification is-danger is-5 is-flex-grow-1 is-flex is-align-items-center">
+                            <b><?= $_SESSION['erro']; ?></b>
+                        </div>
+                        <?php unset($_SESSION['erro']); ?>
+                    <?php endif; ?>
 
-            <?php if (isset($_SESSION['mensagem'])): ?>
-                <div class="notification is-success is-5">
-                    <b><?= $_SESSION['mensagem']; ?></b>
+                    <?php if (isset($_SESSION['mensagem'])): ?>
+                        <div class="notification is-success is-5 is-flex-grow-1 is-flex is-align-items-center">
+                            <b><?= $_SESSION['mensagem']; ?></b>
+                        </div>
+                        <?php unset($_SESSION['mensagem']); ?>
+                    <?php endif; ?>
                 </div>
-
-                <?php unset($_SESSION['mensagem']); ?>
-            <?php endif; ?>
-
-            <div class="box has-background-link" style="width: 430px;">
-                <h2 class="subtitle has-text-primary-15-invert">Saldo Atual</h2>
-                <p class="title is-1">
-                    R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?>
-                </p>
             </div>
 
             <div class="columns">
@@ -107,6 +115,7 @@ foreach ($transacoesWorkbanch as $param) {
                                     <div class="select">
                                         <select name="tipo" required>
                                             <option value="Entrada">Receita</option>
+                                            <option value="Diario">Diário</option>
                                             <option value="Saida">Despesa</option>
                                         </select>
                                     </div>
@@ -151,6 +160,7 @@ foreach ($transacoesWorkbanch as $param) {
                                     <select name="filtro">
                                         <option value="">Todos</option>
                                         <option value="Entrada">Receitas</option>
+                                        <option value="Diario">Diario</option>
                                         <option value="Saida">Despesas</option>
                                     </select>
                                 </div>
@@ -177,9 +187,13 @@ foreach ($transacoesWorkbanch as $param) {
                                             <td class="subtitle is-5"><?php $r = number_format($t->getValor(), 2, ',', '.');
                                             echo ("R$$r"); ?></td>
                                             <td class="subtitle is-5">
-                                                <?php if ($t->getTipo() == "Entrada"): ?>
+                                                <?php if ($t->getTipo() === "Entrada"): ?>
                                                     <span class="tag is-success has-text-primary-15-invert is-size-6">
                                                         Receita
+                                                    </span>
+                                                <?php elseif ($t->getTipo() === "Diario"): ?>
+                                                    <span class="tag is-warning has-text-primary-15-invert is-size-6">
+                                                        Diário
                                                     </span>
                                                 <?php else: ?>
                                                     <span class="tag is-danger has-text-primary-15-invert is-size-6">
@@ -206,40 +220,55 @@ foreach ($transacoesWorkbanch as $param) {
                     </div>
                 </div>
             </div>
-        </div>
 
-        <div class="mt-6" id="extrato">
-            <h3 class="title is-3">Extrato</h3>
 
-            <?php
-            $totalReceitas = 0;
-            $totalDespesas = 0;
+            <div class="mt-6" id="extrato">
+                <h3 class="title is-3">Extrato</h3>
 
-            foreach ($carteira->getTransacoes() as $t) {
-                if ($t->getTipo() == "Entrada") {
-                    $totalReceitas += $t->getValor();
-                } else {
-                    $totalDespesas += $t->getValor();
+                <?php
+                $totalReceitas = 0;
+                $totalDespesas = 0;
+
+                foreach ($carteira->getTransacoes() as $t) {
+                    if ($t->getTipo() == "Entrada") {
+                        $totalReceitas += $t->getValor();
+                    } else {
+                        $totalDespesas -= $t->getValor();
+                    }
                 }
-            }
-            ?>
+                ?>
 
-            <div class="columns">
-                <div class="column">
-                    <div class="notification is-success has-text-primary-15-invert">
-                        <b>Total Receitas:<br>
-                            <span class="title is-3">R$ <?= number_format($totalReceitas, 2, ',', '.') ?></span></b>
+                <div class="columns">
+                    <div class="column">
+                        <div class="notification is-success has-text-primary-15-invert">
+                            <b>Total Receitas:<br>
+                                <span class="title is-3">R$ <?= number_format($totalReceitas, 2, ',', '.') ?></span></b>
+                        </div>
                     </div>
-                </div>
 
-                <div class="column">
-                    <div class="notification is-danger has-text-primary-15-invert">
-                        <b>Total Despesas:<br>
-                            <span class="title is-3">R$ <?= number_format($totalDespesas, 2, ',', '.') ?></span></b>
+                    <div class="column">
+                        <div class="notification is-danger has-text-primary-15-invert">
+                            <b>Total Despesas:<br>
+                                <span class="title is-3">R$ <?= number_format($totalDespesas, 2, ',', '.') ?></span></b>
+                        </div>
                     </div>
                 </div>
             </div>
+
+            <table class="table is-striped is-hoverable is-fullwidth mt-6">
+
+                <tr>
+                    <th class="title is-4">Valor</th>
+                    <th class="title is-4">Tipo</th>
+                    <th class="title is-4">Descrição</th>
+                    <th class="title is-4">Data</th>
+                </tr>
+                <tr>
+                </tr>
+            </table>
+
         </div>
+    </section>
 </body>
 
 </html>

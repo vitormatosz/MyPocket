@@ -20,12 +20,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (!empty($valor) && !empty($tipo) && !empty($descricao) && !empty($data)) {
 
-        $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id");
-        $stmt->execute(["id" => $id]);
+        $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND idUser = :id_usuario");
+        $stmt->execute(["id" => $id, "idUser" => $_SESSION["usuario_id"]]);
         $antiga = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $saldoAtual = 0;
-        $todas = $pdo->query("SELECT * FROM transacoes");
+        $todas = $pdo->prepare("SELECT * FROM transacoes WHERE idUser = :id_usuario");
+        $todas->execute(["idUser" => $_SESSION['usuario_id']]);
         foreach ($todas as $param) {
             if ($param["tipo"] === "Entrada") {
                 $saldoAtual += $param["valor"];
@@ -37,7 +38,7 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         if ($antiga["tipo"] === "Entrada") {
             $saldoAtual -= $antiga["valor"];
         } else {
-            $saldoAtual  += $antiga["valor"];
+            $saldoAtual += $antiga["valor"];
         }
 
         if ($tipo === "Entrada") {
@@ -52,8 +53,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit;
         }
 
-       $stmt = $pdo->prepare("UPDATE transacoes SET valor = :valor, tipo = :tipo, descricao = :descricao, data = :data WHERE id = :id");
-        $stmt->execute(['valor' => $valor, 'tipo' => $tipo, 'descricao' => $descricao, 'data' => $data, 'id' => $id]);
+        $stmt = $pdo->prepare("UPDATE transacoes SET valor = :valor, tipo = :tipo, descricao = :descricao, data = :data WHERE id = :id AND idUser = :id_usuario");
+        $stmt->execute(['valor' => $valor, 'tipo' => $tipo, 'descricao' => $descricao, 'data' => $data, 'id' => $id, 'idUser' => $_SESSION['usuario_id']]);
         $_SESSION['mensagem'] = "Transação atualizada com sucesso!";
         header('Location: index.php');
         exit;
@@ -116,13 +117,17 @@ if (!$transacao) {
                         <div class="control">
                             <div class="select">
                                 <select name="tipo" value="<?= htmlspecialchars($transacao["tipo"]) ?>" required>
-                                    <option value="Entrada" <?= $transacao["tipo"] === "Entrada" ? "selected" : "" ?>>
+                                    <option value="Entrada" <?= $transacao["tipo"] === "Entrada" ? "selected" : ""?>>
                                         Receita
                                     </option>
 
-                                    <option value="Saida" <?= $transacao["tipo"] === "Saida" ? "selected" : "" ?>>
-                                        Despesa
+                                    <option value="Diario" <?= $transacao["tipo"] === "Diario" ? "selected" : ""?>>
+                                        Diario
+                                    </option>
 
+                                    <option value="Saida" <?= $transacao["tipo"] === "Saida" ? "selected" : ""?>>
+                                        Despesa
+                                    </option>
                                 </select>
                             </div>
                         </div>

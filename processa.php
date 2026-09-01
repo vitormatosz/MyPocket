@@ -4,6 +4,7 @@ declare(strict_types=1);
 require_once "classes/Transacao.php";
 require_once "classes/Receita.php";
 require_once "classes/Despesa.php";
+require_once "classes/Diario.php";
 require_once "classes/Carteira.php";
 
 session_start();
@@ -22,6 +23,12 @@ foreach ($stmt as $row) {
             $row['descricao'],
             $row['data']
         );
+    } else if ($row['tipo'] === "Diario") {
+        $t = new Diario(
+            (float) $row['valor'],
+            $row['descricao'],
+            $row['data']
+        );
     } else {
         $t = new Despesa(
             (float) $row['valor'],
@@ -33,23 +40,20 @@ foreach ($stmt as $row) {
     $carteira->carregarTransacao($t);
 }
 
-
 try {
-
     $tipo = $_POST['tipo'];
     $descricao = $_POST['descricao'];
     $valor = (float) $_POST['valor'];
     $data = $_POST['data'];
 
-    $dataMin = ("2026-01-01");
-    $dataMax = ("2026-12-31");
-
-    if($data < $dataMin || $data > $dataMax){
+    if (empty($data)) {
         throw new Exception("Data inválida");
     }
 
     if ($tipo === "Entrada") {
         $transacao = new Receita($valor, $descricao, $data);
+    } else if ($tipo === "Diario") {
+        $transacao = new Diario($valor, $descricao, $data);
     } else {
         $transacao = new Despesa($valor, $descricao, $data);
     }
@@ -74,9 +78,7 @@ try {
     $_SESSION['mensagem'] = "Transação cadastrada com sucesso!";
 
 } catch (Exception $e) {
-
     $_SESSION['erro'] = $e->getMessage();
-
 }
 
 header("Location: index.php");
