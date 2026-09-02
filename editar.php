@@ -20,13 +20,13 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 
     if (!empty($valor) && !empty($tipo) && !empty($descricao) && !empty($data)) {
 
-        $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND idUser = :id_usuario");
-        $stmt->execute(["id" => $id, "idUser" => $_SESSION["usuario_id"]]);
+        $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND id_usuario = :id_usuario");
+        $stmt->execute(["id" => $id, "id_usuario" => $_SESSION["usuario_id"]]);
         $antiga = $stmt->fetch(PDO::FETCH_ASSOC);
 
         $saldoAtual = 0;
-        $todas = $pdo->prepare("SELECT * FROM transacoes WHERE idUser = :id_usuario");
-        $todas->execute(["idUser" => $_SESSION['usuario_id']]);
+        $todas = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario");
+        $todas->execute(["id_usuario" => $_SESSION['usuario_id']]);
         foreach ($todas as $param) {
             if ($param["tipo"] === "Entrada") {
                 $saldoAtual += $param["valor"];

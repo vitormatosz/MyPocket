@@ -10,10 +10,12 @@ require_once "classes/Carteira.php";
 session_start();
 
 require_once 'database/conexao.php';
+require_once 'auten.php';
 
 $carteira = new Carteira();
 
-$stmt = $pdo->query("SELECT * FROM transacoes");
+$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario");
+$stmt->execute(['id_usuario' => $_SESSION['usuario_id']]);
 
 foreach ($stmt as $row) {
 
@@ -61,8 +63,8 @@ try {
     $carteira->addTransacoes($transacao);
 
     $sql = "
-        INSERT INTO transacoes (valor, tipo, descricao, data)
-        VALUES (:valor, :tipo, :descricao, :data)
+        INSERT INTO transacoes (valor, tipo, descricao, data, id_usuario)
+        VALUES (:valor, :tipo, :descricao, :data, :id_usuario)
     ";
 
     $stmt = $pdo->prepare($sql);
@@ -71,7 +73,8 @@ try {
         ':valor' => $valor,
         ':tipo' => $tipo,
         ':descricao' => $descricao,
-        ':data' => $data
+        ':data' => $data,
+        ':id_usuario' => $_SESSION['usuario_id']
     ]);
 
 

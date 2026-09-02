@@ -1,31 +1,70 @@
 <?php
 require_once 'classes/Transacao.php';
+require_once 'auten.php';
 require_once 'classes/Diario.php';
 require_once 'classes/Receita.php';
 require_once 'classes/Despesa.php';
 require_once 'classes/Carteira.php';
 
-session_start();
 
 require_once 'database/conexao.php';
 
+require_once 'database/conexao.php';
+
+$ano = $_GET['ano'] ?? date('Y');
+$mes = $_GET['mes'] ?? date('m'); 
+
+// CARTEIRA GERAL — sem filtro de ano, só pro Saldo Atual
+$carteiraGeral = new Carteira();
+
+$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario");
+$stmt->execute(['id_usuario' => $_SESSION['usuario_id']]);
+
+foreach ($stmt as $row) {
+    if ($row['tipo'] === "Entrada") {
+        $t = new Receita((float) $row['valor'], $row['descricao'], $row['data']);
+    } elseif ($row['tipo'] === "Diario") {
+        $t = new Diario((float) $row['valor'], $row['descricao'], $row['data']);
+    } else {
+        $t = new Despesa((float) $row['valor'], $row['descricao'], $row['data']);
+    }
+    $t->setId((int) $row['id']);
+    $carteiraGeral->carregarTransacao($t);
+}
+
+// CARTEIRA DO ANO — filtrada, pro Extrato
 $carteira = new Carteira();
 
-$stmt = $pdo->query("SELECT * FROM transacoes");
-$transacoesWorkbanch = $stmt;
+$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario AND YEAR(data) = :ano");
+$stmt->execute(['id_usuario' => $_SESSION['usuario_id'], 'ano' => $ano]);
 
-foreach ($transacoesWorkbanch as $param) {
-    if ($param['tipo'] === "Entrada") {
-        $t = new Receita((float) $param['valor'], $param['descricao'], $param['data']);
-    } else if ($param['tipo'] === "Diario") {
-        $t = new Diario((float) $param['valor'], $param['descricao'], $param['data']);
+foreach ($stmt as $row) {
+    if ($row['tipo'] === "Entrada") {
+        $t = new Receita((float) $row['valor'], $row['descricao'], $row['data']);
+    } elseif ($row['tipo'] === "Diario") {
+        $t = new Diario((float) $row['valor'], $row['descricao'], $row['data']);
     } else {
-        $t = new Despesa((float) $param['valor'], $param['descricao'], $param['data']);
+        $t = new Despesa((float) $row['valor'], $row['descricao'], $row['data']);
     }
-
-    $t->setId((int) $param['id']);
-
+    $t->setId((int) $row['id']);
     $carteira->carregarTransacao($t);
+}
+
+$carteiraMes = new Carteira();
+
+$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario AND YEAR(data) = :ano AND MONTH(data) = :mes");
+$stmt->execute(['id_usuario' => $_SESSION['usuario_id'], 'ano' => $ano, 'mes' => $mes]);
+
+foreach ($stmt as $row) {
+    if ($row['tipo'] === "Entrada") {
+        $t = new Receita((float) $row['valor'], $row['descricao'], $row['data']);
+    } elseif ($row['tipo'] === "Diario") {
+        $t = new Diario((float) $row['valor'], $row['descricao'], $row['data']);
+    } else {
+        $t = new Despesa((float) $row['valor'], $row['descricao'], $row['data']);
+    }
+    $t->setId((int) $row['id']);
+    $carteiraMes->carregarTransacao($t);
 }
 ?>
 
@@ -41,7 +80,7 @@ foreach ($transacoesWorkbanch as $param) {
 
 <body>
     <section class="section">
-        <div class="container">
+        <div class="container is-fluid">
 
             <div class="is-flex is-align-items-center mb-5">
                 <span class="mr-4">
@@ -57,9 +96,10 @@ foreach ($transacoesWorkbanch as $param) {
                     </p>
                 </div>
             </div>
-            <div class="field">
+            <div class="field is-grouped is-align-items-center mb-5">
+                <p class="mb-2">Olá, <b><?= htmlspecialchars($_SESSION['usuario_nome']) ?></b></p>
                 <div class="control">
-                    <a href="login.php" class="button is-link">Sair</a>
+                    <a href="logout.php" class="button is-link">Sair</a>
                 </div>
             </div>
 
@@ -69,22 +109,24 @@ foreach ($transacoesWorkbanch as $param) {
                         class="box has-background-link is-flex-grow-1 is-flex is-flex-direction-column is-justify-content-center">
                         <h2 class="subtitle has-text-primary-15-invert">Saldo Atual</h2>
                         <p class="title is-1">
-                            R$ <?= number_format($carteira->getSaldo(), 2, ',', '.') ?>
+                            R$ <?= number_format($carteiraGeral->getSaldo(), 2, ',', '.') ?>
                         </p>
                     </div>
                 </div>
 
                 <div class="column is-8 is-flex">
                     <?php if (isset($_SESSION['erro'])): ?>
-                        <div class="notification is-danger is-5 is-flex-grow-1 is-flex is-align-items-center">
-                            <b><?= $_SESSION['erro']; ?></b>
+                        <div
+                            class="notification is-danger is-5 is-flex-grow-1 is-flex is-align-items-center is-justify-content-center has-text-centered">
+                            <b class="mb-0"><?= $_SESSION['erro']; ?></b>
                         </div>
                         <?php unset($_SESSION['erro']); ?>
                     <?php endif; ?>
 
                     <?php if (isset($_SESSION['mensagem'])): ?>
-                        <div class="notification is-success is-5 is-flex-grow-1 is-flex is-align-items-center">
-                            <b><?= $_SESSION['mensagem']; ?></b>
+                        <div
+                            class="notification is-success is-5 is-flex-grow-1 is-flex is-align-items-center is-justify-content-center has-text-centered">
+                            <b class="mb-0"><?= $_SESSION['mensagem']; ?></b>
                         </div>
                         <?php unset($_SESSION['mensagem']); ?>
                     <?php endif; ?>
@@ -227,13 +269,16 @@ foreach ($transacoesWorkbanch as $param) {
 
                 <?php
                 $totalReceitas = 0;
+                $totalDiario = 0;
                 $totalDespesas = 0;
 
                 foreach ($carteira->getTransacoes() as $t) {
                     if ($t->getTipo() == "Entrada") {
                         $totalReceitas += $t->getValor();
+                    } else if($t->getTipo() == "Diario") {
+                        $totalDiario += $t->getValor();
                     } else {
-                        $totalDespesas -= $t->getValor();
+                        $totalDespesas += $t->getValor();
                     }
                 }
                 ?>
@@ -247,6 +292,13 @@ foreach ($transacoesWorkbanch as $param) {
                     </div>
 
                     <div class="column">
+                        <div class="notification is-warning has-text-primary-15-invert">
+                            <b>Total Diario:<br>
+                                <span class="title is-3">R$ <?= number_format($totalDiario, 2, ',', '.') ?></span></b>
+                        </div>
+                    </div>
+
+                    <div class="column">
                         <div class="notification is-danger has-text-primary-15-invert">
                             <b>Total Despesas:<br>
                                 <span class="title is-3">R$ <?= number_format($totalDespesas, 2, ',', '.') ?></span></b>
@@ -255,19 +307,127 @@ foreach ($transacoesWorkbanch as $param) {
                 </div>
             </div>
 
-            <table class="table is-striped is-hoverable is-fullwidth mt-6">
+            <div class="mt-6" id="transacoes-mes">
+    <div class="is-flex is-align-items-center is-justify-content-space-between">
+        <h3 class="title is-3 mb-0">Transações de <?= $nomesMeses[$mes] ?? $mes ?>/<?= $ano ?></h3>
 
-                <tr>
-                    <th class="title is-4">Valor</th>
-                    <th class="title is-4">Tipo</th>
-                    <th class="title is-4">Descrição</th>
-                    <th class="title is-4">Data</th>
-                </tr>
-                <tr>
-                </tr>
-            </table>
+        <form method="GET">
+            <input type="hidden" name="ano" value="<?= htmlspecialchars($ano) ?>">
+            <div class="select">
+                <select name="mes" onchange="this.form.submit()">
+                    <?php
+                    $nomesMeses = [
+                        '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março', '04' => 'Abril',
+                        '05' => 'Maio', '06' => 'Junho', '07' => 'Julho', '08' => 'Agosto',
+                        '09' => 'Setembro', '10' => 'Outubro', '11' => 'Novembro', '12' => 'Dezembro'
+                    ];
+                    foreach ($nomesMeses as $num => $nome): ?>
+                        <option value="<?= $num ?>" <?= $num == $mes ? 'selected' : '' ?>><?= $nome ?></option>
+                    <?php endforeach; ?>
+                </select>
+            </div>
+        </form>
+    </div>
 
-        </div>
+    <?php if (empty($carteiraMes->getTransacoes())): ?>
+        <p class="subtitle is-5 mt-3">Nenhuma transação em <?= $nomesMeses[$mes] ?? $mes ?>/<?= $ano ?>.</p>
+    <?php else: ?>
+        <table class="table is-striped is-hoverable is-fullwidth mt-3">
+            <tr>
+                <th class="title is-4">Valor</th>
+                <th class="title is-4">Tipo</th>
+                <th class="title is-4">Descrição</th>
+                <th class="title is-4">Data</th>
+                <th></th>
+            </tr>
+            <?php foreach ($carteiraMes->getTransacoes() as $t): ?>
+                <tr>
+                    <td class="subtitle is-5">R$<?= number_format($t->getValor(), 2, ',', '.') ?></td>
+                    <td class="subtitle is-5">
+                        <?php if ($t->getTipo() === "Entrada"): ?>
+                            <span class="tag is-success has-text-primary-15-invert is-size-6">Receita</span>
+                        <?php elseif ($t->getTipo() === "Diario"): ?>
+                            <span class="tag is-warning has-text-primary-15-invert is-size-6">Diário</span>
+                        <?php else: ?>
+                            <span class="tag is-danger has-text-primary-15-invert is-size-6">Despesa</span>
+                        <?php endif; ?>
+                    </td>
+                    <td class="subtitle is-5"><?= $t->getDescricao(); ?></td>
+                    <td class="subtitle is-5"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
+                    <td>
+                        <a href="editar.php?id=<?= $t->getId() ?>" class="button is-small is-warning">Editar</a>
+                        <a href="delete.php?id=<?= $t->getId() ?>" class="button is-small is-danger"
+                            onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</a>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    <?php endif; ?>
+</div>
+
+    <div class="mt-6" id="resumo-mensal">
+    <h3 class="title is-3">Resumo Mensal de <?= $ano ?></h3>
+
+    <?php
+    // Agrupa as transações do ano selecionado por mês
+    $resumoPorMes = [];
+
+    foreach ($carteira->getTransacoes() as $t) {
+        $mes = (new DateTime($t->getData()))->format('m');
+
+        if (!isset($resumoPorMes[$mes])) {
+            $resumoPorMes[$mes] = ['entradas' => 0, 'saidas' => 0, 'diario' => 0];
+        }
+
+        if ($t->getTipo() == "Entrada") {
+            $resumoPorMes[$mes]['entradas'] += $t->getValor();
+        } elseif ($t->getTipo() == "Diario") {
+            $resumoPorMes[$mes]['diario'] += $t->getValor();
+        } else {
+            $resumoPorMes[$mes]['saidas'] += $t->getValor();
+        }
+    }
+
+    ksort($resumoPorMes); // ordena Janeiro -> Dezembro
+
+    $nomesMeses = [
+        '01' => 'Janeiro', '02' => 'Fevereiro', '03' => 'Março', '04' => 'Abril',
+        '05' => 'Maio', '06' => 'Junho', '07' => 'Julho', '08' => 'Agosto',
+        '09' => 'Setembro', '10' => 'Outubro', '11' => 'Novembro', '12' => 'Dezembro'
+    ];
+    ?>
+
+    <?php if (empty($resumoPorMes)): ?>
+        <p class="subtitle is-5">Nenhuma transação cadastrada em <?= $ano ?>.</p>
+    <?php else: ?>
+        <table class="table is-striped is-hoverable is-fullwidth mt-2">
+            <tr>
+                <th class="title is-4">Mês</th>
+                <th class="title is-4">Entradas</th>
+                <th class="title is-4">Saídas</th>
+                <th class="title is-4">Diário</th>
+                <th class="title is-4">Performance</th>
+            </tr>
+            <?php foreach ($resumoPorMes as $mes => $totais): ?>
+                <?php
+                // Performance = Entradas - (Saídas + Diário)
+                $performance = $totais['entradas'] - ($totais['saidas'] + $totais['diario']);
+                ?>
+                <tr>
+                    <td class="subtitle is-5"><?= $nomesMeses[$mes] ?></td>
+                    <td class="subtitle is-5">R$ <?= number_format($totais['entradas'], 2, ',', '.') ?></td>
+                    <td class="subtitle is-5">R$ <?= number_format($totais['saidas'], 2, ',', '.') ?></td>
+                    <td class="subtitle is-5">R$ <?= number_format($totais['diario'], 2, ',', '.') ?></td>
+                    <td class="subtitle is-5">
+                        <span class="tag <?= $performance >= 0 ? 'is-success' : 'is-danger' ?> has-text-primary-15-invert is-size-6">
+                            R$ <?= number_format($performance, 2, ',', '.') ?>
+                        </span>
+                    </td>
+                </tr>
+            <?php endforeach; ?>
+        </table>
+    <?php endif; ?>
+</div>
     </section>
 </body>
 

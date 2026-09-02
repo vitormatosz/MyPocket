@@ -1,7 +1,7 @@
 <?php
 
 $host = 'localhost';
-$db   = 'sistema_crud';
+$db   = 'mypocket';
 $user = 'root';
 $pass = '';
 
@@ -12,7 +12,5 @@ try {
 } catch (PDOException $e) {
     die("Erro na conexão: " . $e->getMessage());
 }
-
-
 ?>
 

@@ -7,10 +7,15 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
     $nome = trim($_POST['nome']);
     $email = trim($_POST['email']);
     $senha = trim($_POST['senha']);
+    $confSenha = trim($_POST['conf']);
 
-    if (!empty($nome) && !empty($email)) {
+    if (!empty($nome) && !empty($email) && !empty($senha) && !empty($confSenha)) {
+
+    if ($senha !== $confSenha) {
+        $erro = "As senhas estão diferentes!";
+    }
         $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha) VALUES (:nome, :email, :senha)");
-        $stmt->execute(['nome' => $nome, 'email' => $email, 'senha' => $senha]);
+        $stmt->execute(['nome' => $nome, 'email' => $email, 'senha' => password_hash($senha, PASSWORD_DEFAULT)]);
         header('Location: login.php');
         exit;
     }

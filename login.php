@@ -1,11 +1,19 @@
 <?php
 
+session_start();
+
 require_once 'database/conexao.php';
+
+// Se já estiver logado, não faz sentido ver o login de novo
+if (isset($_SESSION['usuario_id'])) {
+    header('Location: index.php');
+    exit;
+}
 
 $erro = '';
 
 // Processa o envio do formulário de login
-if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'entrar') {
+if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $emailForm = trim($_POST['email']);
     $senhaForm = trim($_POST['senha']);
 
@@ -15,9 +23,12 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
         $stmt->execute([':email' => $emailForm]);
         $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        if ($usuario && (password_verify($senhaForm, $usuario['senha']) || $senhaForm === $usuario['senha'])) {
-            // Redireciona para a carteira passando o ID do usuário na URL
-            header("Location: index.php?usuario_id=" . $usuario['id']);
+        if ($usuario && (password_verify($senhaForm, $usuario['senha']))) {
+            
+            $_SESSION['usuario_id'] = $usuario['id'];
+            $_SESSION['usuario_nome'] = $usuario['nome'];
+
+            header("Location: index.php");
             exit;
         } else {
             $erro = "E-mail ou senha incorretos!";
