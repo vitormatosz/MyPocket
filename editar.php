@@ -4,13 +4,6 @@ require_once "database/conexao.php";
 
 session_start();
 
-$id = $_GET["id"] ?? null;
-
-if (!$id) {
-    header("Location: index.php");
-    exit;
-}
-
 // U - UPDATE: Salvar alterações
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $valor = trim($_POST["valor"]);
@@ -53,8 +46,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
             exit;
         }
 
-        $stmt = $pdo->prepare("UPDATE transacoes SET valor = :valor, tipo = :tipo, descricao = :descricao, data = :data WHERE id = :id AND idUser = :id_usuario");
-        $stmt->execute(['valor' => $valor, 'tipo' => $tipo, 'descricao' => $descricao, 'data' => $data, 'id' => $id, 'idUser' => $_SESSION['usuario_id']]);
+        $stmt = $pdo->prepare("UPDATE transacoes SET valor = :valor, tipo = :tipo, descricao = :descricao, data = :data WHERE id = :id AND id_usuario = :id_usuario");
+        $stmt->execute(['valor' => $valor, 'tipo' => $tipo, 'descricao' => $descricao, 'data' => $data, 'id' => $id, 'id_usuario' => $_SESSION['usuario_id']]);
         $_SESSION['mensagem'] = "Transação atualizada com sucesso!";
         header('Location: index.php');
         exit;
