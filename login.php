@@ -10,33 +10,36 @@ if (isset($_SESSION['usuario_id'])) {
     exit;
 }
 
-$erro = '';
+try {
+    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+        $emailForm = trim($_POST['email']);
+        $senhaForm = trim($_POST['senha']);
 
-// Processa o envio do formulário de login
-if ($_SERVER['REQUEST_METHOD'] === 'POST') {
-    $emailForm = trim($_POST['email']);
-    $senhaForm = trim($_POST['senha']);
+        if (!empty($emailForm) && !empty($senhaForm)) {
+            // Busca o usuário no banco de dados pelo e-mail
+            $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = :email");
+            $stmt->execute([':email' => $emailForm]);
+            $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
 
-    if (!empty($emailForm) && !empty($senhaForm)) {
-        // Busca o usuário no banco de dados pelo e-mail
-        $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = :email");
-        $stmt->execute([':email' => $emailForm]);
-        $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
+            if ($usuario && (password_verify($senhaForm, $usuario['senha']))) {
 
-        if ($usuario && (password_verify($senhaForm, $usuario['senha']))) {
-            
-            $_SESSION['usuario_id'] = $usuario['id'];
-            $_SESSION['usuario_nome'] = $usuario['nome'];
+                $_SESSION['usuario_id'] = $usuario['id'];
+                $_SESSION['usuario_nome'] = $usuario['nome'];
 
-            header("Location: index.php");
-            exit;
+                header("Location: index.php");
+                exit;
+            } else {
+                throw new Exception("E-mail ou senha incorretos!");
+            }
         } else {
-            $erro = "E-mail ou senha incorretos!";
+            throw new Exception("Preencha todos os campos!");
         }
-    } else {
-        $erro = "Preencha todos os campos!";
     }
+
+} catch (Exception $e) {
+    $_SESSION['erro'] = $e->getMessage();
 }
+
 ?>
 
 <!DOCTYPE html>
@@ -53,7 +56,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
         <div class="hero-body">
             <div class="container">
                 <div class="columns is-centered">
-                    <div class="column is-6-desktop is-6-tablet">
+                    <div class="column is-6-desktop is-6-tablet">                         
 
                         <div class="card p-6">
                             <h3 class="title is-3 has-text-start">Entrar</h3>

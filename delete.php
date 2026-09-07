@@ -5,6 +5,8 @@ session_start();
 require_once "database/conexao.php";
 
 $id = $_GET["id"] ?? null;
+$idUser = $_GET["id"] ?? null;
+
 //DELETE TRANSAÇÔES
 if ($id) {
     // Busca a transação que será excluída
@@ -40,16 +42,6 @@ if ($id) {
             $_SESSION["mensagem"] = "Transação excluída com sucesso!";
         }
     }
-}
-
-//DELETE USUÁRIOS
-
-if ($id) {
-    // D - DELETE: Remover do banco
-    $stmt = $pdo->prepare("DELETE FROM usuarios WHERE id = :id");
-    $stmt->execute(['id' => $id]);
-    header('Location: cadastro.php');
-exit;
 }
 
 header('Location: index.php');

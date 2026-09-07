@@ -4,6 +4,8 @@ require_once "database/conexao.php";
 
 session_start();
 
+$id = $_GET["id"] ?? null;
+
 // U - UPDATE: Salvar alterações
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $valor = trim($_POST["valor"]);
@@ -66,7 +68,7 @@ if (!$transacao) {
 ?>
 
 <!DOCTYPE html>
-<html lang="pt-br">
+<html lang="pt-br" data-theme="dark">
 
 <head>
     <meta charset="UTF-8">

@@ -13,13 +13,13 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
 
     if ($senha !== $confSenha) {
         $erro = "As senhas estão diferentes!";
-    }
-        $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha) VALUES (:nome, :email, :senha)");
-        $stmt->execute(['nome' => $nome, 'email' => $email, 'senha' => password_hash($senha, PASSWORD_DEFAULT)]);
-        header('Location: login.php');
-        exit;
-    }
-}
+    } else {
+    $stmt = $pdo->prepare("INSERT INTO usuarios (nome, email, senha) VALUES (:nome, :email, :senha)");
+    $stmt->execute(['nome' => $nome, 'email' => $email, 'senha' => password_hash($senha, PASSWORD_DEFAULT)]);
+    header('Location: login.php');
+    exit;
+   }
+}}
 
 // R - READ: Buscar todos os usuários
 $stmt = $pdo->query("SELECT * FROM usuarios ORDER BY id DESC");
@@ -96,10 +96,10 @@ $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
                     <td><?= $u['id'] ?></td>
                     <td><?= htmlspecialchars($u['nome']) ?></td>
                     <td><?= htmlspecialchars($u['email']) ?></td>
-                    <td><?= $u['criado_em'] ?></td>
+                    <td><?= (new DateTime($u['criado_em']))->format('d/m/Y') ?></td>
                     <td>
-                        <a href="editar.php?id=<?= $u['id'] ?>">Editar</a> | 
-                        <a href="delete.php?id=<?= $u['id'] ?>" onclick="return confirm('Deseja excluir?')">Excluir</a>
+                        <a href="./usuarios/editarUser.php?id=<?= $u['id'] ?>">Editar</a> | 
+                        <a href="./usuarios/deleteUser.php?id=<?= $u['id'] ?>" onclick="return confirm('Deseja excluir?')">Excluir</a>
                     </td>
                 </tr>
             <?php endforeach; ?>
