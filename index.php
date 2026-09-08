@@ -162,6 +162,19 @@ foreach ($stmt as $row) {
                             </div>
 
                             <div class="field">
+                                <label class="label">Frequência</label>
+                                <div class="control">
+                                    <div class="select">
+                                        <select name="frequencia" required>
+                                            <option value="unica">Úncia</option>
+                                            <option value="fixa">Fixa</option>
+                                            <option value="parc">Parcelada</option>
+                                        </select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="field">
                                 <label class="label">Descrição</label>
                                 <div class="control"><input class="input" type="text" name="descricao" required>
                                 </div>
@@ -245,9 +258,9 @@ foreach ($stmt as $row) {
                                             </td>
                                             <td>
                                                 <a href="editar.php?id=<?= $t->getId() ?>"
-                                                    class="button is-small is-warning">Editar</a>
+                                                    class="button has-text-primary-15-invert is-small is-warning">Editar</a>
 
-                                                <a href="delete.php?id=<?= $t->getId() ?>" class="button is-small is-danger"
+                                                <a href="delete.php?id=<?= $t->getId() ?>" class="button has-text-primary-15-invert is-small is-danger"
                                                     onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</a>
                                             </td>
                                         </tr>
@@ -387,8 +400,8 @@ foreach ($stmt as $row) {
                                 <td class="subtitle is-5"><?= $t->getDescricao(); ?></td>
                                 <td class="subtitle is-5"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
                                 <td>
-                                    <a href="editar.php?id=<?= $t->getId() ?>" class="button is-small is-warning">Editar</a>
-                                    <a href="delete.php?id=<?= $t->getId() ?>" class="button is-small is-danger"
+                                    <a href="editar.php?id=<?= $t->getId() ?>" class="button has-text-primary-15-invert is-small is-warning">Editar</a>
+                                    <a href="delete.php?id=<?= $t->getId() ?>" class="button has-text-primary-15-invert is-small is-danger"
                                         onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</a>
                                 </td>
                             </tr>
