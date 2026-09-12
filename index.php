@@ -1,18 +1,36 @@
 <?php
-require_once 'classes/Transacao.php';
+
 require_once 'auten.php';
+require_once 'classes/Transacao.php';
 require_once 'classes/Diario.php';
 require_once 'classes/Receita.php';
 require_once 'classes/Despesa.php';
 require_once 'classes/Carteira.php';
-
-require_once 'database/conexao.php';
+require_once 'recorrencias.php';
 
 require_once 'database/conexao.php';
 
 $ano = $_GET['ano'] ?? date('Y');
 $mes = $_GET['mes'] ?? date('m');
 
+gerarRecorrenciasDoPeriodo($pdo, $_SESSION['usuario_id'], $ano, $mes);
+
+$nomesMeses = [
+    '01' => 'Janeiro',
+    '02' => 'Fevereiro',
+    '03' => 'Março',
+    '04' => 'Abril',
+    '05' => 'Maio',
+    '06' => 'Junho',
+    '07' => 'Julho',
+    '08' => 'Agosto',
+    '09' => 'Setembro',
+    '10' => 'Outubro',
+    '11' => 'Novembro',
+    '12' => 'Dezembro'
+];
+
+// CARTEIRA GERAL — sem filtro nenhum, sempre soma tudo (pro Saldo Atual)
 $carteiraGeral = new Carteira();
 
 $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario");
@@ -30,6 +48,7 @@ foreach ($stmt as $row) {
     $carteiraGeral->carregarTransacao($t);
 }
 
+// CARTEIRA DO ANO — filtrada só por ano (pro Extrato e Resumo Mensal)
 $carteira = new Carteira();
 
 $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario AND YEAR(data) = :ano");
@@ -47,6 +66,7 @@ foreach ($stmt as $row) {
     $carteira->carregarTransacao($t);
 }
 
+// CARTEIRA DO MÊS — filtrada por ano E mês (pra tabela "Transações do Mês")
 $carteiraMes = new Carteira();
 
 $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario AND YEAR(data) = :ano AND MONTH(data) = :mes");
@@ -63,6 +83,35 @@ foreach ($stmt as $row) {
     $t->setId((int) $row['id']);
     $carteiraMes->carregarTransacao($t);
 }
+
+// VALORES REAIS DO MÊS
+$totalEntradaReal = 0;
+$totalSaidaReal = 0;
+
+foreach ($carteiraMes->getTransacoes() as $t) {
+
+    if ($t->getTipo() === "Entrada") {
+        $totalEntradaReal += $t->getValor();
+    } else {
+        $totalSaidaReal += $t->getValor();
+    }
+}
+
+// PREVISÕES DAS RECORRÊNCIAS
+$previsao = calcularPrevisaoRecorrencias(
+    $pdo,
+    $_SESSION['usuario_id'],
+    $ano,
+    $mes
+);
+
+$totalEntradaPrevista = $totalEntradaReal + $previsao['entrada'];
+
+$totalSaidaPrevista = $totalSaidaReal + $previsao['saida'];
+
+$saldoRealMes = $totalEntradaReal - $totalSaidaReal;
+
+$saldoPrevistoMes = $totalEntradaPrevista - $totalSaidaPrevista;
 ?>
 
 <!DOCTYPE html>
@@ -76,6 +125,8 @@ foreach ($stmt as $row) {
 </head>
 
 <body>
+
+
     <section class="section">
         <div class="container is-fluid">
 
@@ -93,11 +144,37 @@ foreach ($stmt as $row) {
                     </p>
                 </div>
             </div>
+
             <div class="field is-grouped is-align-items-center mb-5">
                 <p class="mb-2">Olá, <b><?= htmlspecialchars($_SESSION['usuario_nome']) ?></b></p>
                 <div class="control">
                     <a href="logout.php" class="button is-link">Sair</a>
                 </div>
+
+                <a href="recorrencias.php" class="button is-light">Recorrências</a>
+            </div>
+
+            <!-- FILTRO ÚNICO DE MÊS/ANO - controla a página toda -->
+            <div class="box mb-5">
+                <form method="GET" class="is-flex is-align-items-center" style="gap: 15px;">
+                    <label class="label mb-0">Visualizando:</label>
+
+                    <div class="select">
+                        <select name="mes" onchange="this.form.submit()">
+                            <?php foreach ($nomesMeses as $num => $nome): ?>
+                                <option value="<?= $num ?>" <?= $num == $mes ? 'selected' : '' ?>><?= $nome ?></option>
+                            <?php endforeach; ?>
+                        </select>
+                    </div>
+
+                    <div class="select">
+                        <select name="ano" onchange="this.form.submit()">
+                            <?php for ($a = 2024; $a <= 2030; $a++): ?>
+                                <option value="<?= $a ?>" <?= $a == $ano ? 'selected' : '' ?>><?= $a ?></option>
+                            <?php endfor; ?>
+                        </select>
+                    </div>
+                </form>
             </div>
 
             <div class="columns mb-5">
@@ -135,7 +212,6 @@ foreach ($stmt as $row) {
                 <div class="column is-4">
                     <div class="box">
 
-
                         <h3 class="title is-3">
                             Nova Transação
                         </h3>
@@ -165,14 +241,16 @@ foreach ($stmt as $row) {
                                 <label class="label">Frequência</label>
                                 <div class="control">
                                     <div class="select">
-                                        <select name="frequencia" required>
-                                            <option value="unica">Úncia</option>
+                                        <select name="frequencia" id="frequencia-select" required
+                                            onchange="atualizarCamposRecorrencia()">
+                                            <option value="unica">Única</option>
                                             <option value="fixa">Fixa</option>
                                             <option value="parc">Parcelada</option>
                                         </select>
                                     </div>
                                 </div>
                             </div>
+
 
                             <div class="field">
                                 <label class="label">Descrição</label>
@@ -184,6 +262,12 @@ foreach ($stmt as $row) {
                                 <label class="label">Data</label>
                                 <div class="control">
                                     <input class="input" type="date" name="data" required>
+                                </div>
+                            </div>
+                            <div class="field" id="campo-data-fim" style="display: none;">
+                                <label class="label">Repetir até</label>
+                                <div class="control">
+                                    <input class="input" type="date" name="data_fim" id="data-fim-input">
                                 </div>
                             </div>
 
@@ -206,6 +290,8 @@ foreach ($stmt as $row) {
                         } ?>
 
                         <form method="GET" action="#extrato" class="mt-2">
+                            <input type="hidden" name="ano" value="<?= htmlspecialchars($ano) ?>">
+                            <input type="hidden" name="mes" value="<?= htmlspecialchars($mes) ?>">
                             <div class="field is-grouped is-align-items-center">
                                 <label class="label is-size-5">Filtrar</label>
                                 <div class="select">
@@ -260,7 +346,8 @@ foreach ($stmt as $row) {
                                                 <a href="editar.php?id=<?= $t->getId() ?>"
                                                     class="button has-text-primary-15-invert is-small is-warning">Editar</a>
 
-                                                <a href="delete.php?id=<?= $t->getId() ?>" class="button has-text-primary-15-invert is-small is-danger"
+                                                <a href="delete.php?id=<?= $t->getId() ?>"
+                                                    class="button has-text-primary-15-invert is-small is-danger"
                                                     onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</a>
                                             </td>
                                         </tr>
@@ -275,7 +362,7 @@ foreach ($stmt as $row) {
 
 
             <div class="mt-6" id="extrato">
-                <h3 class="title is-3">Extrato</h3>
+                <h3 class="title is-3">Extrato de <?= $ano ?></h3>
 
                 <?php
                 $totalReceitas = 0;
@@ -318,98 +405,6 @@ foreach ($stmt as $row) {
             </div>
 
 
-
-            <div class="mt-6" id="transacoes-mes">
-
-                <div class="is-flex is-align-items-center is-justify-content-space-between">
-                    <h3 class="title is-3 mb-0">Transações de <?= $nomesMeses[$mes] ?? $mes ?>/<?= $ano ?></h3>
-
-                    <div class="is-flex is-align-items-center is-justify-content-end " style="gap: 10px;">
-                        <form method="GET" id="mes" action="#transacoes-mes">
-                            <input type="hidden" name="mes" value="<?= htmlspecialchars($mes) ?>">
-                            <div class="select">
-                                <select name="ano" onchange="this.form.submit()">
-                                    <?php
-                                    $anos = [
-                                        '2030' => '2030',
-                                        '2029' => '2029',
-                                        '2028' => '2028',
-                                        '2027' => '2027',
-                                        '2026' => '2026',
-                                        '2025' => '2025',
-                                        '2024' => '2024',
-                                    ];
-                                    foreach ($anos as $num => $nome): ?>
-                                        <option value="<?= $num ?>" <?= $num == $ano ? 'selected' : '' ?>><?= $nome ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </form>
-
-                        <form method="GET" action="#transacoes-mes">
-                            <input type="hidden" name="ano" value="<?= htmlspecialchars($ano) ?>">
-                            <div class="select">
-                                <select name="mes" onchange="this.form.submit()">
-                                    <?php
-                                    $nomesMeses = [
-                                        '01' => 'Janeiro',
-                                        '02' => 'Fevereiro',
-                                        '03' => 'Março',
-                                        '04' => 'Abril',
-                                        '05' => 'Maio',
-                                        '06' => 'Junho',
-                                        '07' => 'Julho',
-                                        '08' => 'Agosto',
-                                        '09' => 'Setembro',
-                                        '10' => 'Outubro',
-                                        '11' => 'Novembro',
-                                        '12' => 'Dezembro'
-                                    ];
-                                    foreach ($nomesMeses as $num => $nome): ?>
-                                        <option value="<?= $num ?>" <?= $num == $mes ? 'selected' : '' ?>><?= $nome ?></option>
-                                    <?php endforeach; ?>
-                                </select>
-                            </div>
-                        </form>
-                    </div>
-                </div>
-
-                <?php if (empty($carteiraMes->getTransacoes())): ?>
-                    <p class="subtitle is-5 mt-3">Nenhuma transação em <?= $nomesMeses[$mes] ?? $mes ?>/<?= $ano ?>.</p>
-                <?php else: ?>
-                    <table class="table is-striped is-hoverable is-fullwidth mt-3">
-                        <tr>
-                            <th class="title is-4">Valor</th>
-                            <th class="title is-4">Tipo</th>
-                            <th class="title is-4">Descrição</th>
-                            <th class="title is-4">Data</th>
-                            <th></th>
-                        </tr>
-                        <?php foreach ($carteiraMes->getTransacoes() as $t): ?>
-                            <tr>
-                                <td class="subtitle is-5">R$<?= number_format($t->getValor(), 2, ',', '.') ?></td>
-                                <td class="subtitle is-5">
-                                    <?php if ($t->getTipo() === "Entrada"): ?>
-                                        <span class="tag is-success has-text-primary-15-invert is-size-6">Receita</span>
-                                    <?php elseif ($t->getTipo() === "Diario"): ?>
-                                        <span class="tag is-warning has-text-primary-15-invert is-size-6">Diário</span>
-                                    <?php else: ?>
-                                        <span class="tag is-danger has-text-primary-15-invert is-size-6">Despesa</span>
-                                    <?php endif; ?>
-                                </td>
-                                <td class="subtitle is-5"><?= $t->getDescricao(); ?></td>
-                                <td class="subtitle is-5"><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
-                                <td>
-                                    <a href="editar.php?id=<?= $t->getId() ?>" class="button has-text-primary-15-invert is-small is-warning">Editar</a>
-                                    <a href="delete.php?id=<?= $t->getId() ?>" class="button has-text-primary-15-invert is-small is-danger"
-                                        onclick="return confirm('Tem certeza que deseja excluir?')">Excluir</a>
-                                </td>
-                            </tr>
-                        <?php endforeach; ?>
-                    </table>
-                <?php endif; ?>
-            </div>
-
             <div class="mt-6" id="resumo-mensal">
                 <h3 class="title is-3">Resumo Mensal de <?= $ano ?></h3>
 
@@ -429,28 +424,18 @@ foreach ($stmt as $row) {
                     }
                 }
 
-                $nomesMeses = [
-                    '01' => 'Janeiro',
-                    '02' => 'Fevereiro',
-                    '03' => 'Março',
-                    '04' => 'Abril',
-                    '05' => 'Maio',
-                    '06' => 'Junho',
-                    '07' => 'Julho',
-                    '08' => 'Agosto',
-                    '09' => 'Setembro',
-                    '10' => 'Outubro',
-                    '11' => 'Novembro',
-                    '12' => 'Dezembro'
-                ];
+                // Agrupa todas as transações do ano por mês para facilitar a exibição no acordeon
+                $transacoesPorMes = [];
+                foreach ($carteira->getTransacoes() as $t) {
+                    $mesChave = (new DateTime($t->getData()))->format('m');
+                    $transacoesPorMes[$mesChave][] = $t;
+                }
 
-                // Pré-popula os 12 meses zerados
                 $resumoPorMes = [];
                 foreach ($nomesMeses as $numMes => $nome) {
                     $resumoPorMes[$numMes] = ['entradas' => 0, 'saidas' => 0, 'diario' => 0];
                 }
 
-                // Soma as transações do ano em cima dos meses já criados
                 foreach ($carteira->getTransacoes() as $t) {
                     $mesChave = (new DateTime($t->getData()))->format('m');
 
@@ -465,42 +450,198 @@ foreach ($stmt as $row) {
                 ?>
 
                 <table class="table is-striped is-hoverable is-fullwidth mt-2">
-                    <tr>
-                        <th class="title is-4">Mês</th>
-                        <th class="title is-4">Entradas</th>
-                        <th class="title is-4">Saídas</th>
-                        <th class="title is-4">Diário</th>
-                        <th class="title is-4">Performance</th>
-                        <th class="title is-4">Saldo Acumulado</th>
-                    </tr>
-                    <?php foreach ($resumoPorMes as $mesChave => $totais): ?>
-                        <?php
-                        $performance = $totais['entradas'] - ($totais['saidas'] + $totais['diario']);
-                        $saldoAcumulado += $performance;
-                        ?>
+                    <thead>
                         <tr>
-                            <td class="subtitle is-5"><?= $nomesMeses[$mesChave] ?></td>
-                            <td class="subtitle is-5 has-text-success">R$
-                                <?= number_format($totais['entradas'], 2, ',', '.') ?></td>
-                            <td class="subtitle is-5 has-text-danger">R$
-                                <?= number_format($totais['saidas'], 2, ',', '.') ?></td>
-                            <td class="subtitle is-5 has-text-warning">R$
-                                <?= number_format($totais['diario'], 2, ',', '.') ?></td>
-                            <td class="subtitle is-5">
-                                <span
-                                    class="tag <?= $performance >= 0 ? 'is-success' : 'is-danger' ?> has-text-primary-15-invert is-size-6">
-                                    R$ <?= number_format($performance, 2, ',', '.') ?>
-                                </span>
-                            </td>
-                            <td class="subtitle is-5">
-                                <b>R$ <?= number_format($saldoAcumulado, 2, ',', '.') ?></b>
-                            </td>
+                            <th class="title is-4">Mês</th>
+                            <th class="title is-4">Entradas</th>
+                            <th class="title is-4">Saídas</th>
+                            <th class="title is-4">Diário</th>
+                            <th class="title is-4">Performance</th>
+                            <th class="title is-4">Saldo Acumulado</th>
+                            <th class="title is-4 has-text-centered">Ações</th>
                         </tr>
-                    <?php endforeach; ?>
+                    </thead>
+                    <tbody>
+                        <?php foreach ($resumoPorMes as $mesChave => $totais): ?>
+                            <?php
+                            $performance = $totais['entradas'] - ($totais['saidas'] + $totais['diario']);
+                            $saldoAcumulado += $performance;
+                            $transacoesDoMes = $transacoesPorMes[$mesChave] ?? [];
+                            ?>
+                            <tr>
+                                <td class="subtitle is-5"><?= $nomesMeses[$mesChave] ?></td>
+                                <td class="subtitle is-5 has-text-success">R$
+                                    <?= number_format($totais['entradas'], 2, ',', '.') ?>
+                                </td>
+                                <td class="subtitle is-5 has-text-danger">R$
+                                    <?= number_format($totais['saidas'], 2, ',', '.') ?>
+                                </td>
+                                <td class="subtitle is-5 has-text-warning">R$
+                                    <?= number_format($totais['diario'], 2, ',', '.') ?>
+                                </td>
+                                <td class="subtitle is-5">
+                                    <span
+                                        class="tag <?= $performance >= 0 ? 'is-success' : 'is-danger' ?> has-text-primary-15-invert is-size-6">
+                                        R$ <?= number_format($performance, 2, ',', '.') ?>
+                                    </span>
+                                </td>
+                                <td class="subtitle is-5">
+                                    <b>R$ <?= number_format($saldoAcumulado, 2, ',', '.') ?></b>
+                                </td>
+                                <td class="has-text-centered">
+                                    <button class="button is-small is-link"
+                                        onclick="toggleAcordeon('mes-<?= $mesChave ?>', this)">
+                                        Ver Transações
+                                    </button>
+                                </td>
+                            </tr>
+
+                            <!-- Linha do Acordeon contendo as transações do mês -->
+                            <tr id="mes-<?= $mesChave ?>" style="display: none;" class="">
+                                <td colspan="7">
+                                    <div class="box my-3">
+                                        <h5 class="title is-5 mb-3">Transações de <?= $nomesMeses[$mesChave] ?>/<?= $ano ?>
+                                        </h5>
+                                        <?php if (empty($transacoesDoMes)): ?>
+                                            <p class="is-size-6">Nenhuma transação registrada neste mês.</p>
+                                        <?php else: ?>
+                                            <table class="table is-fullwidth is-striped is-size-6">
+                                                <thead>
+                                                    <tr>
+                                                        <th>Valor</th>
+                                                        <th>Tipo</th>
+                                                        <th>Descrição</th>
+                                                        <th>Data</th>
+                                                        <th>Ações</th>
+                                                    </tr>
+                                                </thead>
+                                                <tbody>
+                                                    <?php foreach ($transacoesDoMes as $t): ?>
+                                                        <tr>
+                                                            <td>R$ <?= number_format($t->getValor(), 2, ',', '.') ?></td>
+                                                            <td>
+                                                                <?php if ($t->getTipo() === "Entrada"): ?>
+                                                                    <span class="tag is-success is-small">Receita</span>
+                                                                <?php elseif ($t->getTipo() === "Diario"): ?>
+                                                                    <span class="tag is-warning is-small">Diário</span>
+                                                                <?php else: ?>
+                                                                    <span class="tag is-danger is-small">Despesa</span>
+                                                                <?php endif; ?>
+                                                            </td>
+                                                            <td><?= htmlspecialchars($t->getDescricao()) ?></td>
+                                                            <td><?= (new DateTime($t->getData()))->format('d/m/Y') ?></td>
+                                                            <td>
+                                                                <a href="editar.php?id=<?= $t->getId() ?>"
+                                                                    class="button is-small is-warning">Editar</a>
+                                                                <a href="delete.php?id=<?= $t->getId() ?>"
+                                                                    class="button is-small is-danger"
+                                                                    onclick="return confirm('Tem certeza?')">Excluir</a>
+                                                            </td>
+                                                        </tr>
+                                                    <?php endforeach; ?>
+                                                </tbody>
+                                            </table>
+                                        <?php endif; ?>
+                                    </div>
+                                </td>
+                            </tr>
+                        <?php endforeach; ?>
+                    </tbody>
                 </table>
             </div>
+
+            <div class="box mt-6">
+                <h3 class="title is-3">Resumo Mensal - Previsão</h3>
+
+                <table class="table is-fullwidth is-striped is-hoverable">
+                    <thead>
+                        <tr>
+                            <th class="title is-4">Mês</th>
+                            <th class="title is-4">Entradas</th>
+                            <th class="title is-4">Saídas</th>
+                            <th class="title is-4">Saldo</th>
+                        </tr>
+                    </thead>
+
+                    <tbody>
+                        <tr>
+                            <td>
+                                <strong class="title is-4"><?= $nomesMeses[$mes] ?></strong>
+                            </td>
+
+                            <td>
+                                <span class="has-text-success is-size-5">
+                                    Real: R$ <?= number_format($totalEntradaReal, 2, ',', '.') ?>
+                                </span>
+
+                                <br>
+
+                                <span class=" is-size-5">
+                                    Previsto: R$ <?= number_format($totalEntradaPrevista, 2, ',', '.') ?>
+                                </span>
+                            </td>
+
+                            <td>
+                                <span class="has-text-danger is-size-5">
+                                    Real: R$ <?= number_format($totalSaidaReal, 2, ',', '.') ?>
+                                </span>
+
+                                <br>
+
+                                <span class=" is-size-5">
+                                    Previsto: R$ <?= number_format($totalSaidaPrevista, 2, ',', '.') ?>
+                                </span>
+                            </td>
+
+                            <td>
+                                <strong class="has-text-link is-size-5">
+                                    Real: R$ <?= number_format($saldoRealMes, 2, ',', '.') ?>
+                                </strong>
+
+                                <br>
+
+                                <span class=" is-size-5">
+                                    Previsto: R$ <?= number_format($saldoPrevistoMes, 2, ',', '.') ?>
+                                </span>
+                            </td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
         </div>
     </section>
 </body>
+<script>
+    function atualizarCamposRecorrencia() {
+        const freq = document.getElementById('frequencia-select').value;
+        const campo = document.getElementById('campo-data-fim');
+        const input = document.getElementById('data-fim-input');
+
+        if (freq === 'parc') {
+            campo.style.display = 'block';
+            input.required = true;
+        } else {
+            campo.style.display = 'none';
+            input.required = false;
+            input.value = '';
+        }
+    }
+
+    function toggleAcordeon(idLinha, botao) {
+        const linha = document.getElementById(idLinha);
+        if (linha.style.display === 'none') {
+            linha.style.display = '';
+            botao.textContent = 'Ocultar';
+            botao.classList.remove('is-link');
+            botao.classList.add('is-light');
+        } else {
+            linha.style.display = 'none';
+            botao.textContent = 'Ver Transações';
+            botao.classList.remove('is-light');
+            botao.classList.add('is-link');
+        }
+    }
+</script>
 
 </html>

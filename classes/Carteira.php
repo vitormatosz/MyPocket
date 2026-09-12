@@ -20,7 +20,6 @@ class Carteira{
             if($transacao->getValor() > $this->saldo){
                throw new Exception("Saldo Insuficente!");
             }
-
             $this->saldo -= $transacao->getValor();
         }
 
