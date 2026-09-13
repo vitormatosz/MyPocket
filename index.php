@@ -84,7 +84,6 @@ foreach ($stmt as $row) {
     $carteiraMes->carregarTransacao($t);
 }
 
-// VALORES REAIS DO MÊS
 $totalEntradaReal = 0;
 $totalSaidaReal = 0;
 
@@ -97,7 +96,6 @@ foreach ($carteiraMes->getTransacoes() as $t) {
     }
 }
 
-// PREVISÕES DAS RECORRÊNCIAS
 $previsao = calcularPrevisaoRecorrencias(
     $pdo,
     $_SESSION['usuario_id'],
@@ -106,7 +104,6 @@ $previsao = calcularPrevisaoRecorrencias(
 );
 
 $totalEntradaPrevista = $totalEntradaReal + $previsao['entrada'];
-
 $totalSaidaPrevista = $totalSaidaReal + $previsao['saida'];
 
 $saldoRealMes = $totalEntradaReal - $totalSaidaReal;
@@ -145,27 +142,15 @@ $saldoPrevistoMes = $totalEntradaPrevista - $totalSaidaPrevista;
                 </div>
             </div>
 
-            <div class="field is-grouped is-align-items-center mb-5">
+            <div class="field is-grouped is-align-items-center mb-6">
                 <p class="mb-2">Olá, <b><?= htmlspecialchars($_SESSION['usuario_nome']) ?></b></p>
                 <div class="control">
                     <a href="logout.php" class="button is-link">Sair</a>
                 </div>
-
-                <a href="recorrencias.php" class="button is-light">Recorrências</a>
             </div>
-
-            <!-- FILTRO ÚNICO DE MÊS/ANO - controla a página toda -->
-            <div class="box mb-5">
-                <form method="GET" class="is-flex is-align-items-center" style="gap: 15px;">
+        
+                <form method="GET" class="is-flex is-align-items-center is-justify-content-end" style="gap: 15px;">
                     <label class="label mb-0">Visualizando:</label>
-
-                    <div class="select">
-                        <select name="mes" onchange="this.form.submit()">
-                            <?php foreach ($nomesMeses as $num => $nome): ?>
-                                <option value="<?= $num ?>" <?= $num == $mes ? 'selected' : '' ?>><?= $nome ?></option>
-                            <?php endforeach; ?>
-                        </select>
-                    </div>
 
                     <div class="select">
                         <select name="ano" onchange="this.form.submit()">
@@ -175,9 +160,8 @@ $saldoPrevistoMes = $totalEntradaPrevista - $totalSaidaPrevista;
                         </select>
                     </div>
                 </form>
-            </div>
-
-            <div class="columns mb-5">
+            
+            <div class="columns mt-3 mb-5">
                 <div class="column is-4 is-flex">
                     <div
                         class="box has-background-link is-flex-grow-1 is-flex is-flex-direction-column is-justify-content-center">
@@ -251,7 +235,6 @@ $saldoPrevistoMes = $totalEntradaPrevista - $totalSaidaPrevista;
                                 </div>
                             </div>
 
-
                             <div class="field">
                                 <label class="label">Descrição</label>
                                 <div class="control"><input class="input" type="text" name="descricao" required>
@@ -309,7 +292,7 @@ $saldoPrevistoMes = $totalEntradaPrevista - $totalSaidaPrevista;
                             </div>
                         </form>
 
-                        <div style="max-height: 390px; overflow-y: auto;">
+                        <div style="max-height: 470px; overflow-y: auto;">
 
                             <table class="table is-striped is-hoverable is-fullwidth mt-3">
                                 <tr>
@@ -496,7 +479,6 @@ $saldoPrevistoMes = $totalEntradaPrevista - $totalSaidaPrevista;
                                 </td>
                             </tr>
 
-                            <!-- Linha do Acordeon contendo as transações do mês -->
                             <tr id="mes-<?= $mesChave ?>" style="display: none;" class="">
                                 <td colspan="7">
                                     <div class="box my-3">
@@ -551,62 +533,57 @@ $saldoPrevistoMes = $totalEntradaPrevista - $totalSaidaPrevista;
             </div>
 
             <div class="box mt-6">
-                <h3 class="title is-3">Resumo Mensal - Previsão</h3>
+                <h3 class="title is-3">Previsão de Saldo</h3>
+                <p class="subtitle is-6 has-text-grey-light">Estimativa considerando recorrências que ainda vão
+                    acontecer</p>
 
-                <table class="table is-fullwidth is-striped is-hoverable">
-                    <thead>
-                        <tr>
-                            <th class="title is-4">Mês</th>
-                            <th class="title is-4">Entradas</th>
-                            <th class="title is-4">Saídas</th>
-                            <th class="title is-4">Saldo</th>
-                        </tr>
-                    </thead>
+                <div class="columns is-multiline mt-3">
+                    <?php foreach ($nomesMeses as $numMes => $nomeMes): ?>
+                        <?php
+                        $totais = $resumoPorMes[$numMes];
 
-                    <tbody>
-                        <tr>
-                            <td>
-                                <strong class="title is-4"><?= $nomesMeses[$mes] ?></strong>
-                            </td>
+                        $entradaRealMes = $totais['entradas'];
+                        $saidaRealMes = $totais['saidas'] + $totais['diario'];
+                        $saldoRealMesCard = $entradaRealMes - $saidaRealMes;
 
-                            <td>
-                                <span class="has-text-success is-size-5">
-                                    Real: R$ <?= number_format($totalEntradaReal, 2, ',', '.') ?>
-                                </span>
+                        $previsaoMes = calcularPrevisaoRecorrencias($pdo, $_SESSION['usuario_id'], $ano, $numMes);
 
-                                <br>
+                        $entradaPrevistaMes = $entradaRealMes + $previsaoMes['entrada'];
+                        $saidaPrevistaMes = $saidaRealMes + $previsaoMes['saida'];
+                        $saldoPrevistoMesCard = $entradaPrevistaMes - $saidaPrevistaMes;
 
-                                <span class=" is-size-5">
-                                    Previsto: R$ <?= number_format($totalEntradaPrevista, 2, ',', '.') ?>
-                                </span>
-                            </td>
+                        $temPrevisaoExtra = $previsaoMes['entrada'] > 0 || $previsaoMes['saida'] > 0;
+                        ?>
+                        <div class="column is-3">
+                            <div class="box has-background-black-ter" style="height: 100%;">
+                                <p class="title is-5 mb-3"><?= $nomeMes ?></p>
 
-                            <td>
-                                <span class="has-text-danger is-size-5">
-                                    Real: R$ <?= number_format($totalSaidaReal, 2, ',', '.') ?>
-                                </span>
+                                <p class="mb-1 has-text-grey-light is-size-7">Saldo Previsto</p>
+                                <p
+                                    class="title is-4 mb-3 <?= $saldoPrevistoMesCard >= 0 ? 'has-text-success' : 'has-text-danger' ?>">
+                                    R$ <?= number_format($saldoPrevistoMesCard, 2, ',', '.') ?>
+                                </p>
 
-                                <br>
+                                <p class="is-size-7 has-text-success mb-1">
+                                    Receita prevista: R$ <?= number_format($entradaPrevistaMes, 2, ',', '.') ?>
+                                </p>
+                                <p class="is-size-7 has-text-danger">
+                                    Despesa prevista: R$ <?= number_format($saidaPrevistaMes, 2, ',', '.') ?>
+                                </p>
 
-                                <span class=" is-size-5">
-                                    Previsto: R$ <?= number_format($totalSaidaPrevista, 2, ',', '.') ?>
-                                </span>
-                            </td>
-
-                            <td>
-                                <strong class="has-text-link is-size-5">
-                                    Real: R$ <?= number_format($saldoRealMes, 2, ',', '.') ?>
-                                </strong>
-
-                                <br>
-
-                                <span class=" is-size-5">
-                                    Previsto: R$ <?= number_format($saldoPrevistoMes, 2, ',', '.') ?>
-                                </span>
-                            </td>
-                        </tr>
-                    </tbody>
-                </table>
+                                <?php if ($temPrevisaoExtra): ?>
+                                    <p class="is-size-7 has-text-grey-light mt-2">
+                                        📈 inclui recorrências futuras
+                                    </p>
+                                <?php else: ?>
+                                    <p class="is-size-7 has-text-grey-light mt-2">
+                                        sem recorrências pendentes
+                                    </p>
+                                <?php endif; ?>
+                            </div>
+                        </div>
+                    <?php endforeach; ?>
+                </div>
             </div>
 
         </div>

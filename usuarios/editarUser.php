@@ -9,7 +9,6 @@ if (!$id) {
     exit;
 }
 
-// U - UPDATE: Salvar alterações
 if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     $nome = trim($_POST['nome']);
     $email = trim($_POST['email']);
@@ -28,7 +27,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST') {
     }
 }
 
-// Buscar dados atuais do usuário
 $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE id = :id");
 $stmt->execute(['id' => $id]);
 $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
@@ -51,7 +49,7 @@ if (!$usuario) {
 <body>
     <section class="hero is-fullheight">
         <div class="hero-body is-justify-content-center">
-            <!-- Definimos uma largura máxima (max-width) para o card do formulário -->
+
             <div class="container" style="max-width: 700px;">
 
                 <h3 class="title is-3">

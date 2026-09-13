@@ -2,7 +2,6 @@
 
 require_once 'database/conexao.php';
 
-// C - CREATE: Inserir usuário
 if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['acao'] === 'cadastrar') {
     $nome = trim($_POST['nome']);
     $email = trim($_POST['email']);
@@ -21,7 +20,6 @@ if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['acao']) && $_POST['ac
    }
 }}
 
-// R - READ: Buscar todos os usuários
 $stmt = $pdo->query("SELECT * FROM usuarios ORDER BY id DESC");
 $usuarios = $stmt->fetchAll(PDO::FETCH_ASSOC);
 ?>

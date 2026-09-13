@@ -95,7 +95,6 @@ if ($frequencia === 'unica') {
 
     $idRecorrencia = $pdo->lastInsertId();
 
-    // Gera só a transação do próprio dia escolhido - o resto vem sob demanda
     $stmt = $pdo->prepare("
         INSERT INTO transacoes (valor, tipo, descricao, data, id_usuario, id_recorrencia)
         VALUES (:valor, :tipo, :descricao, :data, :id_usuario, :id_recorrencia)

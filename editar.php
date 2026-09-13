@@ -57,8 +57,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
 }
 
 // Buscar dados atuais do usuário
-$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id");
-$stmt->execute(["id" => $id]);
+$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND id_usuario = :id_usuario");
+$stmt->execute(["id" => $id, "id_usuario" => $_SESSION["usuario_id"]]);
 $transacao = $stmt->fetch(PDO::FETCH_ASSOC);
 
 if (!$transacao) {

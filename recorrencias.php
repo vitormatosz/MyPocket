@@ -2,20 +2,36 @@
 
 function gerarRecorrenciasDoPeriodo(PDO $pdo, int $idUsuario, string $ano, string $mes): void
 {
-    // NUNCA gera nada no futuro - isso é o que resolve o problema do saldo
-    if ($ano . $mes > date('Ym')) {
-        return;
-    }
-
     $stmt = $pdo->prepare("SELECT * FROM recorrencias WHERE id_usuario = :id_usuario AND ativa = 1");
     $stmt->execute(['id_usuario' => $idUsuario]);
     $recorrencias = $stmt->fetchAll(PDO::FETCH_ASSOC);
 
+    $mesAtual = new DateTime('first day of this month');
+
     foreach ($recorrencias as $r) {
-        if ($r['tipo'] === 'Diario') {
-            gerarDiasDoMes($pdo, $r, $ano, $mes);
-        } else {
-            gerarMensal($pdo, $r, $ano, $mes);
+        $cursor = new DateTime($r['data_inicio']);
+        $cursor->modify('first day of this month');
+
+        $fimGeracao = clone $mesAtual;
+        if ($r['data_fim']) {
+            $dataFimMes = new DateTime($r['data_fim']);
+            $dataFimMes->modify('first day of this month');
+            if ($dataFimMes < $fimGeracao) {
+                $fimGeracao = $dataFimMes;
+            }
+        }
+
+        while ($cursor <= $fimGeracao) {
+            $anoCursor = $cursor->format('Y');
+            $mesCursor = $cursor->format('m');
+
+            if ($r['tipo'] === 'Diario') {
+                gerarDiasDoMes($pdo, $r, $anoCursor, $mesCursor);
+            } else {
+                gerarMensal($pdo, $r, $anoCursor, $mesCursor);
+            }
+
+            $cursor->modify('+1 month');
         }
     }
 }
@@ -38,7 +54,7 @@ function gerarMensal(PDO $pdo, array $r, string $ano, string $mes): void
     ");
     $check->execute(['id_recorrencia' => $r['id'], 'ano' => $ano, 'mes' => $mes]);
     if ($check->fetch()) {
-        return; // já foi gerado, não duplica
+        return;
     }
 
     $diaMax = (int) $competencia->format('t');
@@ -60,18 +76,17 @@ function gerarDiasDoMes(PDO $pdo, array $r, string $ano, string $mes): void
         return;
     }
 
-    $periodo = new DatePeriod($inicio, new DateInterval('P1D'), (clone $limite)->modify('+1 day'));
-
-    foreach ($periodo as $dia) {
+    $dia = clone $inicio;
+    while ($dia <= $limite) {
         $dataStr = $dia->format('Y-m-d');
 
         $check = $pdo->prepare("SELECT id FROM transacoes WHERE id_recorrencia = :id_recorrencia AND data = :data");
         $check->execute(['id_recorrencia' => $r['id'], 'data' => $dataStr]);
-        if ($check->fetch()) {
-            continue;
+        if (!$check->fetch()) {
+            inserirTransacaoDaRecorrencia($pdo, $r, $dataStr);
         }
 
-        inserirTransacaoDaRecorrencia($pdo, $r, $dataStr);
+        $dia->modify('+1 day');
     }
 }
 function inserirTransacaoDaRecorrencia(PDO $pdo, array $r, string $data): void
@@ -95,7 +110,6 @@ function calcularPrevisaoRecorrencias(PDO $pdo, int $idUsuario, string $ano, str
     $entrada = 0;
     $saida = 0;
 
-    // Só calcula previsão para o mês atual ou futuro
     if ($ano . $mes < date('Ym')) {
         return ['entrada' => 0, 'saida' => 0];
     }
@@ -114,12 +128,10 @@ function calcularPrevisaoRecorrencias(PDO $pdo, int $idUsuario, string $ano, str
         $inicio = new DateTime($r['data_inicio']);
         $mesInicio = new DateTime("$ano-$mes-01");
 
-        // Recorrência ainda não começou
         if ($mesInicio < new DateTime($inicio->format('Y-m-01'))) {
             continue;
         }
 
-        // Recorrência já terminou
         if ($r['data_fim'] && $mesInicio > new DateTime($r['data_fim'])) {
             continue;
         }
@@ -133,11 +145,6 @@ function calcularPrevisaoRecorrencias(PDO $pdo, int $idUsuario, string $ano, str
 
             $fimDia = new DateTime("$ano-$mes-01");
             $fimDia->modify('last day of this month');
-
-            // No mês atual, considera apenas até hoje
-            if ($ano . $mes === date('Ym')) {
-                $fimDia = min($fimDia, new DateTime());
-            }
 
             if ($r['data_fim']) {
                 $fimDia = min($fimDia, new DateTime($r['data_fim']));

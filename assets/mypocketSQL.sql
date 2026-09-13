@@ -1,26 +1,43 @@
+CREATE DATABASE mypocket;
 
-create database mypocket;
+USE mypocket;
 
-use mypocket;
-
-create table usuarios(
-id int auto_increment primary key not null,
-nome varchar(100) not null,
-email varchar(100) not null unique,
-senha varchar(255) not null,
-criado_em date
+CREATE TABLE usuarios(
+    id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    nome VARCHAR(100) NOT NULL,
+    email VARCHAR(100) NOT NULL UNIQUE,
+    senha VARCHAR(255) NOT NULL,
+    criado_em TIMESTAMP  DEFAULT CURRENT_TIMESTAMP;
 );
 
-select * from usuarios;
+SELECT * FROM usuarios;
 
-create table transacoes(
-id int auto_increment primary key not null ,
-valor decimal(10,2) not null,
-tipo enum('Entrada', 'Saida', 'Diario') not null,
-descricao varchar(255) not null,
-data date not null,
-id_usuario int not null,
-foreign key (id_usuario) references usuarios(id)
+CREATE TABLE recorrencias (
+    id INT AUTO_INCREMENT PRIMARY KEY,
+    descricao VARCHAR(255) NOT NULL,
+    valor DECIMAL(10,2) NOT NULL,
+    tipo ENUM('Entrada','Saida','Diario') NOT NULL,
+    frequencia ENUM('fixa','parc') NOT NULL,
+    data_inicio DATE NOT NULL,
+    data_fim DATE NULL,
+    dia_vencimento INT NULL,
+    ativa TINYINT(1) NOT NULL DEFAULT 1,
+    id_usuario INT NOT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id)
 );
 
-select * from transacoes;
+SELECT * FROM recorrencias;
+
+CREATE TABLE transacoes(
+    id INT AUTO_INCREMENT PRIMARY KEY NOT NULL,
+    valor DECIMAL(10,2) NOT NULL,
+    tipo ENUM('Entrada', 'Saida', 'Diario') NOT NULL,
+    descricao VARCHAR(255) NOT NULL,
+    data DATE NOT NULL,
+    id_usuario INT NOT NULL,
+    id_recorrencia INT NULL,
+    FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
+    FOREIGN KEY (id_recorrencia) REFERENCES recorrencias(id)
+);
+
+SELECT * FROM transacoes;

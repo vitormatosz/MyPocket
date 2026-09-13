@@ -4,7 +4,6 @@ session_start();
 
 require_once 'database/conexao.php';
 
-// Se já estiver logado, não faz sentido ver o login de novo
 if (isset($_SESSION['usuario_id'])) {
     header('Location: index.php');
     exit;
@@ -16,7 +15,7 @@ try {
         $senhaForm = trim($_POST['senha']);
 
         if (!empty($emailForm) && !empty($senhaForm)) {
-            // Busca o usuário no banco de dados pelo e-mail
+
             $stmt = $pdo->prepare("SELECT * FROM usuarios WHERE email = :email");
             $stmt->execute([':email' => $emailForm]);
             $usuario = $stmt->fetch(PDO::FETCH_ASSOC);
