@@ -6,7 +6,6 @@ session_start();
 
 $id = $_GET["id"] ?? null;
 
-// U - UPDATE: Salvar alterações
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
     $valor = trim($_POST["valor"]);
     $tipo = trim($_POST["tipo"]);
@@ -19,27 +18,35 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->execute(["id" => $id, "id_usuario" => $_SESSION["usuario_id"]]);
         $antiga = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $saldoAtual = 0;
-        $todas = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario");
-        $todas->execute(["id_usuario" => $_SESSION['usuario_id']]);
-        foreach ($todas as $param) {
-            if ($param["tipo"] === "Entrada") {
-                $saldoAtual += $param["valor"];
+        $stmtSaldo = $pdo->prepare("
+    SELECT tipo, valor
+    FROM transacoes
+    WHERE id_usuario = :id_usuario
+      AND cancelada = 0
+      AND data <= CURDATE()
+");
+        $stmtSaldo->execute(['id_usuario' => $_SESSION['usuario_id']]);
+
+        $totalEntradas = 0;
+        $totalSaidas = 0;
+
+        foreach ($stmtSaldo as $row) {
+            if ($row['tipo'] === 'Entrada') {
+                $totalEntradas += (float) $row['valor'];
             } else {
-                $saldoAtual -= $param["valor"];
+                $totalSaidas += (float) $row['valor'];
             }
         }
 
-        if ($antiga["tipo"] === "Entrada") {
-            $saldoAtual -= $antiga["valor"];
-        } else {
-            $saldoAtual += $antiga["valor"];
-        }
+        $saldoAtual = $totalEntradas - $totalSaidas;
 
-        if ($tipo === "Entrada") {
-            $saldoAposEditar = $saldoAtual + (float) $valor;
-        } else {
-            $saldoAposEditar = $saldoAtual - (float) $valor;
+        $saldoAposEditar = $saldoAtual;
+        if ($data <= date('Y-m-d')) {
+            if ($tipo === "Entrada") {
+                $saldoAposEditar += (float) $valor;
+            } else {
+                $saldoAposEditar -= (float) $valor;
+            }
         }
 
         if ($saldoAposEditar < 0) {
@@ -112,15 +119,15 @@ if (!$transacao) {
                         <div class="control">
                             <div class="select">
                                 <select name="tipo" value="<?= htmlspecialchars($transacao["tipo"]) ?>" required>
-                                    <option value="Entrada" <?= $transacao["tipo"] === "Entrada" ? "selected" : ""?>>
+                                    <option value="Entrada" <?= $transacao["tipo"] === "Entrada" ? "selected" : "" ?>>
                                         Receita
                                     </option>
 
-                                    <option value="Diario" <?= $transacao["tipo"] === "Diario" ? "selected" : ""?>>
+                                    <option value="Diario" <?= $transacao["tipo"] === "Diario" ? "selected" : "" ?>>
                                         Diario
                                     </option>
 
-                                    <option value="Saida" <?= $transacao["tipo"] === "Saida" ? "selected" : ""?>>
+                                    <option value="Saida" <?= $transacao["tipo"] === "Saida" ? "selected" : "" ?>>
                                         Despesa
                                     </option>
                                 </select>
@@ -153,11 +160,6 @@ if (!$transacao) {
                     </div>
                 </form>
             </div>
-            </form>
-
-        </div>
-
-
         </div>
     </section>
 

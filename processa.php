@@ -62,48 +62,59 @@ try {
 
     $carteira->addTransacoes($transacao);
 
-$frequencia = $_POST['frequencia'] ?? 'unica';
-$dataFim = $_POST['data_fim'] ?? null;
+    $frequencia = $_POST['frequencia'] ?? 'unica';
+    $dataFim = $_POST['data_fim'] ?? null;
 
-if ($frequencia === 'unica') {
-    $stmt = $pdo->prepare("
+    if ($frequencia === 'unica') {
+        $stmt = $pdo->prepare("
         INSERT INTO transacoes (valor, tipo, descricao, data, id_usuario)
         VALUES (:valor, :tipo, :descricao, :data, :id_usuario)
     ");
-    $stmt->execute([
-        'valor' => $valor, 'tipo' => $tipo, 'descricao' => $descricao,
-        'data' => $data, 'id_usuario' => $_SESSION['usuario_id']
-    ]);
+        $stmt->execute([
+            'valor' => $valor,
+            'tipo' => $tipo,
+            'descricao' => $descricao,
+            'data' => $data,
+            'id_usuario' => $_SESSION['usuario_id']
+        ]);
 
-} else {
-    $diaVencimento = $tipo === 'Diario' ? null : (int) (new DateTime($data))->format('d');
+    } else {
+        $diaVencimento = $tipo === 'Diario' ? null : (int) (new DateTime($data))->format('d');
 
-    $stmt = $pdo->prepare("
+        $stmt = $pdo->prepare("
         INSERT INTO recorrencias (descricao, valor, tipo, frequencia, data_inicio, data_fim, dia_vencimento, id_usuario)
         VALUES (:descricao, :valor, :tipo, :frequencia, :data_inicio, :data_fim, :dia_vencimento, :id_usuario)
     ");
-    $stmt->execute([
-        'descricao' => $descricao,
-        'valor' => $valor,
-        'tipo' => $tipo,
-        'frequencia' => $frequencia,
-        'data_inicio' => $data,
-        'data_fim' => $frequencia === 'fixa' ? null : $dataFim,
-        'dia_vencimento' => $diaVencimento,
-        'id_usuario' => $_SESSION['usuario_id']
-    ]);
+        $stmt->execute([
+            'descricao' => $descricao,
+            'valor' => $valor,
+            'tipo' => $tipo,
+            'frequencia' => $frequencia,
+            'data_inicio' => $data,
+            'data_fim' => $frequencia === 'fixa' ? null : $dataFim,
+            'dia_vencimento' => $diaVencimento,
+            'id_usuario' => $_SESSION['usuario_id']
+        ]);
 
-    $idRecorrencia = $pdo->lastInsertId();
+        $idRecorrencia = $pdo->lastInsertId();
 
-    $stmt = $pdo->prepare("
-        INSERT INTO transacoes (valor, tipo, descricao, data, id_usuario, id_recorrencia)
-        VALUES (:valor, :tipo, :descricao, :data, :id_usuario, :id_recorrencia)
+        if ($data <= date('Y-m-d')) {
+
+            $stmt = $pdo->prepare("
+        INSERT INTO transacoes (valor, tipo, descricao, data, id_usuario, id_recorrencia, data_recorrencia)
+        VALUES (:valor, :tipo, :descricao, :data, :id_usuario, :id_recorrencia, :data_recorrencia)
     ");
-    $stmt->execute([
-        'valor' => $valor, 'tipo' => $tipo, 'descricao' => $descricao,
-        'data' => $data, 'id_usuario' => $_SESSION['usuario_id'], 'id_recorrencia' => $idRecorrencia
-    ]);
-}
+            $stmt->execute([
+                'valor' => $valor,
+                'tipo' => $tipo,
+                'descricao' => $descricao,
+                'data' => $data,
+                'id_usuario' => $_SESSION['usuario_id'],
+                'id_recorrencia' => $idRecorrencia,
+                'data_recorrencia' => $data
+            ]);
+        }
+    }
 
     $_SESSION['mensagem'] = "Transação cadastrada com sucesso!";
 

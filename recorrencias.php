@@ -2,219 +2,413 @@
 
 function gerarRecorrenciasDoPeriodo(PDO $pdo, int $idUsuario, string $ano, string $mes): void
 {
-    $stmt = $pdo->prepare("SELECT * FROM recorrencias WHERE id_usuario = :id_usuario AND ativa = 1");
-    $stmt->execute(['id_usuario' => $idUsuario]);
-    $recorrencias = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $stmt = $pdo->prepare("
+        SELECT *
+        FROM recorrencias
+        WHERE id_usuario = :id_usuario
+          AND ativa = 1
+    ");
 
-    $mesAtual = new DateTime('first day of this month');
+    $stmt->execute([
+        'id_usuario' => $idUsuario
+    ]);
 
-    foreach ($recorrencias as $r) {
-        $cursor = new DateTime($r['data_inicio']);
-        $cursor->modify('first day of this month');
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $recorrencia) {
 
-        $fimGeracao = clone $mesAtual;
-        if ($r['data_fim']) {
-            $dataFimMes = new DateTime($r['data_fim']);
-            $dataFimMes->modify('first day of this month');
-            if ($dataFimMes < $fimGeracao) {
-                $fimGeracao = $dataFimMes;
+        $mes = new DateTime($recorrencia['data_inicio']);
+
+        $mes->modify('first day of this month');
+
+        $fim = new DateTime('first day of this month');
+
+        if (!empty($recorrencia['data_fim'])) {
+
+            $dataFim = new DateTime($recorrencia['data_fim']);
+
+            $dataFim->modify('first day of this month');
+
+            if ($dataFim < $fim) {
+                $fim = $dataFim;
             }
         }
 
-        while ($cursor <= $fimGeracao) {
-            $anoCursor = $cursor->format('Y');
-            $mesCursor = $cursor->format('m');
+        while ($mes <= $fim) {
 
-            if ($r['tipo'] === 'Diario') {
-                gerarDiasDoMes($pdo, $r, $anoCursor, $mesCursor);
+            $anoGerado = $mes->format('Y');
+
+            $mesGerado = $mes->format('m');
+
+            if ($recorrencia['tipo'] === 'Diario') {
+
+                gerarDiario(
+                    $pdo,
+                    $recorrencia,
+                    $anoGerado,
+                    $mesGerado
+                );
+
             } else {
-                gerarMensal($pdo, $r, $anoCursor, $mesCursor);
+
+                gerarMensal(
+                    $pdo,
+                    $recorrencia,
+                    $anoGerado,
+                    $mesGerado
+                );
             }
 
-            $cursor->modify('+1 month');
+            $mes->modify('+1 month');
         }
     }
 }
 
-function gerarMensal(PDO $pdo, array $r, string $ano, string $mes): void
+
+function gerarMensal(PDO $pdo, array $recorrencia, string $ano, string $mes): void
 {
-    $inicio = new DateTime($r['data_inicio']);
     $competencia = new DateTime("$ano-$mes-01");
 
-    if ($competencia < new DateTime($inicio->format('Y-m-01'))) {
-        return;
-    }
-    if ($r['data_fim'] && $competencia > new DateTime($r['data_fim'])) {
+    $ultimoDia = (int) $competencia->format('t');
+
+    $dia = (int) $recorrencia['dia_vencimento'];
+
+    $dia = min($dia, $ultimoDia);
+
+    $data = sprintf(
+        '%s-%s-%02d',
+        $ano,
+        $mes,
+        $dia
+    );
+
+    if ($data > date('Y-m-d')) {
         return;
     }
 
-    $check = $pdo->prepare("
-        SELECT id FROM transacoes
-        WHERE id_recorrencia = :id_recorrencia AND YEAR(data) = :ano AND MONTH(data) = :mes
-    ");
-    $check->execute(['id_recorrencia' => $r['id'], 'ano' => $ano, 'mes' => $mes]);
-    if ($check->fetch()) {
+    if ($data < $recorrencia['data_inicio']) {
         return;
     }
 
-    $diaMax = (int) $competencia->format('t');
-    $dia = min((int) $r['dia_vencimento'], $diaMax);
-    $data = sprintf('%s-%s-%02d', $ano, $mes, $dia);
+    if (!empty($recorrencia['data_fim']) && $data > $recorrencia['data_fim']) {
+        return;
+    }
 
-    inserirTransacaoDaRecorrencia($pdo, $r, $data);
+    if (ocorrenciaExiste($pdo, (int) $recorrencia['id'], $data)) {
+        return;
+    }
+
+    inserirTransacaoDaRecorrencia($pdo, $recorrencia, $data);
 }
 
-function gerarDiasDoMes(PDO $pdo, array $r, string $ano, string $mes): void
+
+function gerarDiario(PDO $pdo, array $recorrencia, string $ano, string $mes): void
 {
-    $inicio = max(new DateTime($r['data_inicio']), new DateTime("$ano-$mes-01"));
-    $fimDoMes = new DateTime("$ano-$mes-01");
-    $fimDoMes->modify('last day of this month');
+    $primeiroDia = new DateTime("$ano-$mes-01");
 
-    $limite = $r['data_fim'] ? min($fimDoMes, new DateTime($r['data_fim'])) : min($fimDoMes, new DateTime());
+    $ultimoDia = clone $primeiroDia;
+    $ultimoDia->modify('last day of this month');
 
-    if ($inicio > $limite) {
+    $dia = new DateTime($recorrencia['data_inicio']);
+
+    if ($dia < $primeiroDia) {
+        $dia = clone $primeiroDia;
+    }
+
+    $fim = clone $ultimoDia;
+
+    if (empty($recorrencia['data_fim'])) {
+
+        $hoje = new DateTime();
+
+        if ($hoje < $fim) {
+            $fim = $hoje;
+        }
+
+    } else {
+
+        $dataFim = new DateTime($recorrencia['data_fim']);
+
+        if ($dataFim < $fim) {
+            $fim = $dataFim;
+        }
+    }
+
+    if ($dia > $fim) {
         return;
     }
 
-    $dia = clone $inicio;
-    while ($dia <= $limite) {
-        $dataStr = $dia->format('Y-m-d');
+    while ($dia <= $fim) {
 
-        $check = $pdo->prepare("SELECT id FROM transacoes WHERE id_recorrencia = :id_recorrencia AND data = :data");
-        $check->execute(['id_recorrencia' => $r['id'], 'data' => $dataStr]);
-        if (!$check->fetch()) {
-            inserirTransacaoDaRecorrencia($pdo, $r, $dataStr);
+        $data = $dia->format('Y-m-d');
+
+        if (
+            !ocorrenciaExiste(
+                $pdo,
+                (int) $recorrencia['id'],
+                $data
+            )
+        ) {
+
+            inserirTransacaoDaRecorrencia(
+                $pdo,
+                $recorrencia,
+                $data
+            );
         }
 
         $dia->modify('+1 day');
     }
 }
-function inserirTransacaoDaRecorrencia(PDO $pdo, array $r, string $data): void
-{
+
+
+function ocorrenciaExiste(
+    PDO $pdo,
+    int $idRecorrencia,
+    string $data
+): bool {
+
     $stmt = $pdo->prepare("
-        INSERT INTO transacoes (valor, tipo, descricao, data, id_usuario, id_recorrencia)
-        VALUES (:valor, :tipo, :descricao, :data, :id_usuario, :id_recorrencia)
+        SELECT id
+        FROM transacoes
+        WHERE id_recorrencia = :id_recorrencia
+          AND data_recorrencia = :data_recorrencia
     ");
+
     $stmt->execute([
-        'valor' => $r['valor'],
-        'tipo' => $r['tipo'],
-        'descricao' => $r['descricao'],
+        'id_recorrencia' => $idRecorrencia,
+        'data_recorrencia' => $data
+    ]);
+
+    return $stmt->fetch() !== false;
+}
+
+
+function inserirTransacaoDaRecorrencia(
+    PDO $pdo,
+    array $recorrencia,
+    string $data
+): void {
+
+    $stmt = $pdo->prepare("
+        INSERT INTO transacoes
+        (
+            valor,
+            tipo,
+            descricao,
+            data,
+            id_usuario,
+            id_recorrencia,
+            data_recorrencia
+        )
+        VALUES
+        (
+            :valor,
+            :tipo,
+            :descricao,
+            :data,
+            :id_usuario,
+            :id_recorrencia,
+            :data_recorrencia
+        )
+    ");
+
+    $stmt->execute([
+        'valor' => $recorrencia['valor'],
+        'tipo' => $recorrencia['tipo'],
+        'descricao' => $recorrencia['descricao'],
         'data' => $data,
-        'id_usuario' => $r['id_usuario'],
-        'id_recorrencia' => $r['id']
+        'id_usuario' => $recorrencia['id_usuario'],
+        'id_recorrencia' => $recorrencia['id'],
+        'data_recorrencia' => $data
     ]);
 }
 
-function calcularPrevisaoRecorrencias(PDO $pdo, int $idUsuario, string $ano, string $mes): array
-{
+
+function calcularPrevisaoRecorrencias(
+    PDO $pdo,
+    int $idUsuario,
+    string $ano,
+    string $mes
+): array {
+
     $entrada = 0;
     $saida = 0;
 
-    if ($ano . $mes < date('Ym')) {
-        return ['entrada' => 0, 'saida' => 0];
+    $mesEscolhido = new DateTime("$ano-$mes-01");
+
+    $mesAtual = new DateTime('first day of this month');
+
+    if ($mesEscolhido < $mesAtual) {
+        return [
+            'entrada' => 0,
+            'saida' => 0
+        ];
     }
 
     $stmt = $pdo->prepare("
         SELECT *
         FROM recorrencias
         WHERE id_usuario = :id_usuario
-        AND ativa = 1
+          AND ativa = 1
     ");
 
-    $stmt->execute(['id_usuario' => $idUsuario]);
+    $stmt->execute([
+        'id_usuario' => $idUsuario
+    ]);
 
-    foreach ($stmt as $r) {
+    foreach ($stmt->fetchAll(PDO::FETCH_ASSOC) as $recorrencia) {
 
-        $inicio = new DateTime($r['data_inicio']);
-        $mesInicio = new DateTime("$ano-$mes-01");
+        $inicio = new DateTime($recorrencia['data_inicio']);
 
-        if ($mesInicio < new DateTime($inicio->format('Y-m-01'))) {
+        $mesInicio = new DateTime(
+            $inicio->format('Y-m-01')
+        );
+
+        if ($mesEscolhido < $mesInicio) {
             continue;
         }
 
-        if ($r['data_fim'] && $mesInicio > new DateTime($r['data_fim'])) {
-            continue;
+        if (!empty($recorrencia['data_fim'])) {
+
+            $mesFim = new DateTime($recorrencia['data_fim']);
+
+            $mesFim->modify('first day of this month');
+
+            if ($mesEscolhido > $mesFim) {
+                continue;
+            }
         }
 
-        if ($r['tipo'] === 'Diario') {
+        if ($recorrencia['tipo'] === 'Diario') {
 
-            $inicioDia = max(
-                new DateTime($r['data_inicio']),
-                new DateTime("$ano-$mes-01")
+            calcularPrevisaoDiaria(
+                $pdo,
+                $recorrencia,
+                $ano,
+                $mes,
+                $entrada,
+                $saida
             );
-
-            $fimDia = new DateTime("$ano-$mes-01");
-            $fimDia->modify('last day of this month');
-
-            if ($r['data_fim']) {
-                $fimDia = min($fimDia, new DateTime($r['data_fim']));
-            }
-
-            $periodo = new DatePeriod(
-                $inicioDia,
-                new DateInterval('P1D'),
-                (clone $fimDia)->modify('+1 day')
-            );
-
-            foreach ($periodo as $dia) {
-
-                $data = $dia->format('Y-m-d');
-
-                $check = $pdo->prepare("
-                    SELECT id
-                    FROM transacoes
-                    WHERE id_recorrencia = :id
-                    AND data = :data
-                ");
-
-                $check->execute([
-                    'id' => $r['id'],
-                    'data' => $data
-                ]);
-
-                if ($check->fetch()) {
-                    continue;
-                }
-
-                if ($r['tipo'] === 'Entrada') {
-                    $entrada += $r['valor'];
-                } else {
-                    $saida += $r['valor'];
-                }
-            }
 
         } else {
 
-            $check = $pdo->prepare("
-                SELECT id
-                FROM transacoes
-                WHERE id_recorrencia = :id
-                AND YEAR(data) = :ano
-                AND MONTH(data) = :mes
-            ");
-
-            $check->execute([
-                'id' => $r['id'],
-                'ano' => $ano,
-                'mes' => $mes
-            ]);
-
-            if ($check->fetch()) {
-                continue;
-            }
-
-            if ($r['tipo'] === 'Entrada') {
-                $entrada += $r['valor'];
-            } else {
-                $saida += $r['valor'];
-            }
+            calcularPrevisaoMensal(
+                $pdo,
+                $recorrencia,
+                $ano,
+                $mes,
+                $entrada,
+                $saida
+            );
         }
     }
-
     return [
         'entrada' => $entrada,
         'saida' => $saida
     ];
+}
+
+function calcularPrevisaoDiaria(
+    PDO $pdo,
+    array $recorrencia,
+    string $ano,
+    string $mes,
+    float &$entrada,
+    float &$saida
+): void {
+
+    $dia = new DateTime("$ano-$mes-01");
+
+    $inicio = new DateTime($recorrencia['data_inicio']);
+
+    if ($inicio > $dia) {
+        $dia = $inicio;
+    }
+
+    $fim = new DateTime("$ano-$mes-01");
+
+    $fim->modify('last day of this month');
+
+    if (!empty($recorrencia['data_fim'])) {
+
+        $dataFim = new DateTime($recorrencia['data_fim']);
+
+        if ($dataFim < $fim) {
+            $fim = $dataFim;
+        }
+    }
+
+    while ($dia <= $fim) {
+        $data = $dia->format('Y-m-d');
+        if (
+            !ocorrenciaExiste(
+                $pdo,
+                (int) $recorrencia['id'],
+                $data
+            )
+        ) {
+
+            if ($recorrencia['tipo'] === 'Entrada') {
+                $entrada += (float) $recorrencia['valor'];
+
+            } else {
+                $saida += (float) $recorrencia['valor'];
+            }
+        }
+        $dia->modify('+1 day');
+    }
+}
+
+function calcularPrevisaoMensal(
+    PDO $pdo,
+    array $recorrencia,
+    string $ano,
+    string $mes,
+    float &$entrada,
+    float &$saida
+): void {
+
+    $mesEscolhido = new DateTime("$ano-$mes-01");
+
+    $ultimoDia = (int) $mesEscolhido->format('t');
+
+    $dia = (int) $recorrencia['dia_vencimento'];
+
+    $dia = min($dia, $ultimoDia);
+
+    $data = sprintf(
+        '%s-%s-%02d',
+        $ano,
+        $mes,
+        $dia
+    );
+
+    if ($data < $recorrencia['data_inicio']) {
+        return;
+    }
+
+    if (
+        !empty($recorrencia['data_fim']) &&
+        $data > $recorrencia['data_fim']
+    ) {
+        return;
+    }
+
+    if (
+        ocorrenciaExiste(
+            $pdo,
+            (int) $recorrencia['id'],
+            $data
+        )
+    ) {
+        return;
+    }
+
+    if ($recorrencia['tipo'] === 'Entrada') {
+        $entrada += (float) $recorrencia['valor'];
+
+    } else {
+        $saida += (float) $recorrencia['valor'];
+    }
 }
 
 ?>
