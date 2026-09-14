@@ -106,17 +106,3 @@ foreach ($stmt as $row) {
     definirFrequencia($t, $row, $frequenciaPorRecorrencia);
     $carteiraMes->carregarTransacao($t);
 }
-
-$filtro = $_GET['filtro'] ?? '';
-$mesGeral = $_GET['mes_geral'] ?? '';
-
-$transacoesGerais = [];
-foreach ($carteiraGeral->getTransacoes() as $transacaoGeral) {
-    $passaTipo = $filtro === '' || $transacaoGeral->getTipo() === $filtro;
-    $mesTransacao = (new DateTime($transacaoGeral->getData()))->format('m');
-    $passaMes = $mesGeral === '' || $mesTransacao === $mesGeral;
-
-    if ($passaTipo && $passaMes) {
-        $transacoesGerais[] = $transacaoGeral;
-    }
-}

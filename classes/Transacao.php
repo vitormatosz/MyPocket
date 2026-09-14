@@ -8,6 +8,7 @@ abstract class Transacao
     protected float $valor;
     protected string $descricao;
     protected string $data;
+    protected string $frequenciaRecorrencia = 'unica'; // 'unica', 'fixa' ou 'parc'
 
     public function __construct(float $valor, string $descricao, string $data)
     {
@@ -40,6 +41,16 @@ public function getId(): int{
 public function setId(int $id): void
 {
     $this->id = $id;
+}
+
+public function setFrequenciaRecorrencia(string $frequencia): void
+{
+    $this->frequenciaRecorrencia = $frequencia;
+}
+
+public function getFrequenciaRecorrencia(): string
+{
+    return $this->frequenciaRecorrencia;
 }
 }
 ?>

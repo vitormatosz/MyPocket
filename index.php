@@ -16,6 +16,20 @@ $mes = $_GET['mes'] ?? date('m');
 gerarRecorrenciasDoPeriodo($pdo, $_SESSION['usuario_id'], $ano, $mes);
 
 require_once 'funcoes.php';
+
+$filtro = $_GET['filtro'] ?? '';
+$mesGeral = $_GET['mes_geral'] ?? '';
+
+$transacoesGerais = [];
+foreach ($carteiraGeral->getTransacoes() as $transacaoGeral) {
+    $passaTipo = $filtro === '' || $transacaoGeral->getTipo() === $filtro;
+    $mesTransacao = (new DateTime($transacaoGeral->getData()))->format('m');
+    $passaMes = $mesGeral === '' || $mesTransacao === $mesGeral;
+
+    if ($passaTipo && $passaMes) {
+        $transacoesGerais[] = $transacaoGeral;
+    }
+}
 ?>
 
 <!DOCTYPE html>
@@ -313,21 +327,6 @@ require_once 'funcoes.php';
                 <div class="is-flex is-flex-wrap-wrap is-align-items-center is-justify-content-space-between mb-4"
                     style="gap: 12px;">
                     <h3 class="title is-3 mb-0">Resumo Mensal de <?= $ano ?></h3>
-
-                    <div class="field is-grouped is-align-items-center mb-0">
-                        <label class="label mb-0 mr-2">Filtrar transações</label>
-                        <div class="control">
-                            <div class="select">
-                                <select id="filtroAcordeao" onchange="filtrarAcordeao()">
-                                    <option value="Todos">Todas</option>
-                                    <option value="Entrada">Receitas</option>
-                                    <option value="Diario">Diário</option>
-                                    <option value="Saida">Despesas</option>
-                                </select>
-                            </div>
-                        </div>
-                    </div>
-                </div>
 
                 <?php
                 $stmtAnterior = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario AND data < :inicio_ano");
