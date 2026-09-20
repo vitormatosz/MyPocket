@@ -18,13 +18,8 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         $stmt->execute(["id" => $id, "id_usuario" => $_SESSION["usuario_id"]]);
         $antiga = $stmt->fetch(PDO::FETCH_ASSOC);
 
-        $stmtSaldo = $pdo->prepare("
-    SELECT tipo, valor
-    FROM transacoes
-    WHERE id_usuario = :id_usuario
-      AND cancelada = 0
-      AND data <= CURDATE()
-");
+        $stmtSaldo = $pdo->prepare("SELECT tipo, valor FROM transacoes WHERE id_usuario = :id_usuario AND cancelada = 0 AND data <= CURDATE() ");
+        
         $stmtSaldo->execute(['id_usuario' => $_SESSION['usuario_id']]);
 
         $totalEntradas = 0;

@@ -13,12 +13,7 @@ if ($id) {
     $transacao = $stmt->fetch(PDO::FETCH_ASSOC);
 
     if ($transacao) {
-        $stmtSaldo = $pdo->prepare("
-        SELECT tipo, valor
-        FROM transacoes
-        WHERE id_usuario = :id_usuario
-        AND cancelada = 0
-        AND data <= CURDATE()");
+        $stmtSaldo = $pdo->prepare("SELECT tipo, valor FROM transacoes WHERE id_usuario = :id_usuario AND cancelada = 0 AND data <= CURDATE()");
         
         $stmtSaldo->execute(['id_usuario' => $_SESSION['usuario_id']]);
 
@@ -37,11 +32,7 @@ if ($id) {
             $_SESSION["erro"] = "Não é possível excluir: o saldo ficaria negativo!";
         } else {
             if (!empty($transacao['id_recorrencia'])) {
-                $stmt = $pdo->prepare("
-                    UPDATE transacoes
-                    SET cancelada = 1
-                    WHERE id = :id AND id_usuario = :id_usuario
-                ");
+                $stmt = $pdo->prepare(" UPDATE transacoes SET cancelada = 1 WHERE id = :id AND id_usuario = :id_usuario ");
                 $stmt->execute([
                     "id" => $id,
                     "id_usuario" => $_SESSION['usuario_id']

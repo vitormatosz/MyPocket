@@ -7,7 +7,7 @@ CREATE TABLE usuarios(
     nome VARCHAR(100) NOT NULL,
     email VARCHAR(100) NOT NULL UNIQUE,
     senha VARCHAR(255) NOT NULL,
-    criado_em TIMESTAMP  DEFAULT CURRENT_TIMESTAMP
+    criado_em TIMESTAMP DEFAULT CURRENT_TIMESTAMP
 );
 
 SELECT * FROM usuarios;
@@ -36,6 +36,8 @@ CREATE TABLE transacoes(
     data DATE NOT NULL,
     id_usuario INT NOT NULL,
     id_recorrencia INT NULL,
+    data_recorrencia DATE NULL,
+    cancelada TINYINT(1) NOT NULL DEFAULT 0,
     FOREIGN KEY (id_usuario) REFERENCES usuarios(id),
     FOREIGN KEY (id_recorrencia) REFERENCES recorrencias(id)
 );

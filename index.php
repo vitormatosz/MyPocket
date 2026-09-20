@@ -21,12 +21,13 @@ $filtro = $_GET['filtro'] ?? '';
 $mesGeral = $_GET['mes_geral'] ?? '';
 
 $transacoesGerais = [];
-foreach ($carteiraGeral->getTransacoes() as $transacaoGeral) {
-    $passaTipo = $filtro === '' || $transacaoGeral->getTipo() === $filtro;
-    $mesTransacao = (new DateTime($transacaoGeral->getData()))->format('m');
-    $passaMes = $mesGeral === '' || $mesTransacao === $mesGeral;
 
-    if ($passaTipo && $passaMes) {
+foreach ($carteiraGeral->getTransacoes() as $transacaoGeral) {
+    $tipo = $transacaoGeral->getTipo();
+    $mes = (new DateTime($transacaoGeral->getData()))->format('m');
+
+    if (($filtro === '' || $tipo === $filtro) &&
+        ($mesGeral === '' || $mes === $mesGeral)) {
         $transacoesGerais[] = $transacaoGeral;
     }
 }
@@ -470,9 +471,9 @@ foreach ($carteiraGeral->getTransacoes() as $transacaoGeral) {
                                                                     <?php if ($t->getFrequenciaRecorrencia() === 'fixa'): ?>
                                                                         <span class="tag is-link is-light">Fixa</span>
                                                                     <?php elseif ($t->getFrequenciaRecorrencia() === 'parc'): ?>
-                                                                        <span class="tag is-info is-light">Parcelada</span>
+                                                                        <span class="tag is-info is-dark">Parcelada</span>
                                                                     <?php else: ?>
-                                                                        <span class="tag is-light">Única</span>
+                                                                        <span class="tag is-primary is-light">Única</span>
                                                                     <?php endif; ?>
                                                                 </td>
                                                                 <td><?= htmlspecialchars($t->getDescricao()) ?></td>

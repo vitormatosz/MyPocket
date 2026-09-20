@@ -17,25 +17,25 @@ $carteira = new Carteira();
 $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id_usuario = :id_usuario");
 $stmt->execute(['id_usuario' => $_SESSION['usuario_id']]);
 
-foreach ($stmt as $row) {
+foreach ($stmt as $param) {
 
-    if ($row['tipo'] === "Entrada") {
+    if ($param['tipo'] === "Entrada") {
         $t = new Receita(
-            (float) $row['valor'],
-            $row['descricao'],
-            $row['data']
+            (float) $param['valor'],
+            $param['descricao'],
+            $param['data']
         );
-    } else if ($row['tipo'] === "Diario") {
+    } else if ($param['tipo'] === "Diario") {
         $t = new Diario(
-            (float) $row['valor'],
-            $row['descricao'],
-            $row['data']
+            (float) $param['valor'],
+            $param['descricao'],
+            $param['data']
         );
     } else {
         $t = new Despesa(
-            (float) $row['valor'],
-            $row['descricao'],
-            $row['data']
+            (float) $param['valor'],
+            $param['descricao'],
+            $param['data']
         );
     }
 
