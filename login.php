@@ -55,7 +55,14 @@ try {
         <div class="hero-body">
             <div class="container">
                 <div class="columns is-centered">
-                    <div class="column is-6-desktop is-6-tablet">                         
+                    <div class="column is-6-desktop is-6-tablet">
+
+                        <?php if (isset($_SESSION['erro'])): ?>
+                            <div class="notification is-danger">
+                                <b><?= htmlspecialchars($_SESSION['erro']) ?></b>
+                            </div>
+                            <?php unset($_SESSION['erro']); ?>
+                        <?php endif; ?>
 
                         <div class="card p-6">
                             <h3 class="title is-3 has-text-start">Entrar</h3>

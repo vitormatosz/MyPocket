@@ -1,7 +1,6 @@
 <?php
 
 require_once "auten.php";
-
 require_once "database/conexao.php";
 
 $id = $_GET["id"] ?? null;

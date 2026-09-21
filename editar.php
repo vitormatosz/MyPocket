@@ -1,6 +1,6 @@
 <?php
 
-require_once "auten.php"; // inicia a sessão e barra quem não está logado
+require_once "auten.php";
 require_once "database/conexao.php";
 
 $id = $_GET["id"] ?? null;
