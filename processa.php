@@ -40,6 +40,7 @@ try {
     $descricao = trim($_POST['descricao'] ?? '');
     $valor = (float) ($_POST['valor'] ?? 0);
     $data = $_POST['data'] ?? '';
+    
     $frequencia = $_POST['frequencia'] ?? 'unica';
     $dataFim = !empty($_POST['data_fim']) ? $_POST['data_fim'] : null;
     $hoje = date('Y-m-d');
