@@ -1,8 +1,13 @@
 <?php
-
+require_once "../auten.php";
 require_once "../database/conexao.php";
 
-$id = $_GET['id'] ?? null;
+if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
+    header('Location: editarUser.php');
+    exit;
+}
+
+$id = (int) $_SESSION['usuario_id'];
 
 if ($id) {
     

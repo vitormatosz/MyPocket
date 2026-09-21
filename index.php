@@ -13,7 +13,7 @@ require_once 'database/conexao.php';
 $ano = $_GET['ano'] ?? date('Y');
 $mes = $_GET['mes'] ?? date('m');
 
-gerarRecorrenciasDoPeriodo($pdo, $_SESSION['usuario_id'], $ano, $mes);
+gerarRecorrenciasDoPeriodo($pdo, $_SESSION['usuario_id']);
 
 require_once 'funcoes.php';
 
@@ -387,6 +387,7 @@ foreach ($carteiraGeral->getTransacoes() as $transacaoGeral) {
                             $saidasTotais = $totais['saidas'] + $totais['diario'];
                             $performance = $totais['entradas'] - $saidasTotais;
                             $saldoAcumulado += $performance;
+
                             $transacoesDoMes = $transacoesPorMes[$mesChave] ?? [];
                             ?>
                             <tr>

@@ -8,7 +8,7 @@ abstract class Transacao
     protected float $valor;
     protected string $descricao;
     protected string $data;
-    protected string $frequenciaRecorrencia = 'unica'; // 'unica', 'fixa' ou 'parc'
+    protected string $frequenciaRecorrencia = 'unica';
 
     public function __construct(float $valor, string $descricao, string $data)
     {

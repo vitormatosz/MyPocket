@@ -1,25 +1,28 @@
 <?php
 
+require_once "auten.php"; // inicia a sessão e barra quem não está logado
 require_once "database/conexao.php";
-
-session_start();
 
 $id = $_GET["id"] ?? null;
 
 if ($_SERVER["REQUEST_METHOD"] === "POST") {
-    $valor = trim($_POST["valor"]);
-    $tipo = trim($_POST["tipo"]);
-    $descricao = trim($_POST["descricao"]);
-    $data = trim($_POST["data"]);
+    $valor = (float) ($_POST["valor"] ?? 0);
+    $tipo = trim($_POST["tipo"] ?? '');
+    $descricao = trim($_POST["descricao"] ?? '');
+    $data = trim($_POST["data"] ?? '');
 
-    if (!empty($valor) && !empty($tipo) && !empty($descricao) && !empty($data)) {
+    if ($valor > 0 && in_array($tipo, ['Entrada', 'Saida', 'Diario'], true) && $descricao !== '' && $data !== '') {
 
-        $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND id_usuario = :id_usuario");
+        $stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND id_usuario = :id_usuario AND cancelada = 0");
         $stmt->execute(["id" => $id, "id_usuario" => $_SESSION["usuario_id"]]);
         $antiga = $stmt->fetch(PDO::FETCH_ASSOC);
 
+        if (!$antiga) {
+            header("Location: index.php");
+            exit;
+        }
+
         $stmtSaldo = $pdo->prepare("SELECT tipo, valor FROM transacoes WHERE id_usuario = :id_usuario AND cancelada = 0 AND data <= CURDATE() ");
-        
         $stmtSaldo->execute(['id_usuario' => $_SESSION['usuario_id']]);
 
         $totalEntradas = 0;
@@ -34,13 +37,23 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         }
 
         $saldoAtual = $totalEntradas - $totalSaidas;
+        $hoje = date('Y-m-d');
 
         $saldoAposEditar = $saldoAtual;
-        if ($data <= date('Y-m-d')) {
-            if ($tipo === "Entrada") {
-                $saldoAposEditar += (float) $valor;
+
+        if ($antiga['data'] <= $hoje) {
+            if ($antiga['tipo'] === 'Entrada') {
+                $saldoAposEditar -= (float) $antiga['valor'];
             } else {
-                $saldoAposEditar -= (float) $valor;
+                $saldoAposEditar += (float) $antiga['valor'];
+            }
+        }
+
+        if ($data <= $hoje) {
+            if ($tipo === "Entrada") {
+                $saldoAposEditar += $valor;
+            } else {
+                $saldoAposEditar -= $valor;
             }
         }
 
@@ -56,10 +69,12 @@ if ($_SERVER["REQUEST_METHOD"] === "POST") {
         header('Location: index.php');
         exit;
     }
+
+    $_SESSION['erro'] = "Preencha todos os campos com valores válidos!";
 }
 
-// Buscar dados atuais do usuário
-$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND id_usuario = :id_usuario");
+// Buscar dados atuais da transação
+$stmt = $pdo->prepare("SELECT * FROM transacoes WHERE id = :id AND id_usuario = :id_usuario AND cancelada = 0");
 $stmt->execute(["id" => $id, "id_usuario" => $_SESSION["usuario_id"]]);
 $transacao = $stmt->fetch(PDO::FETCH_ASSOC);
 

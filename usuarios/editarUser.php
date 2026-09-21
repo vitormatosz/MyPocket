@@ -1,8 +1,9 @@
 <?php
-
+require_once "../auten.php";
 require_once "../database/conexao.php";
 
-$id = $_GET['id'] ?? null;
+$id = (int) $_SESSION['usuario_id'];
+$erro = null;
 
 if (!$id) {
     header('Location: index.php');

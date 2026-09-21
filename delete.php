@@ -1,6 +1,6 @@
 <?php
 
-session_start();
+require_once "auten.php";
 
 require_once "database/conexao.php";
 
@@ -14,7 +14,6 @@ if ($id) {
 
     if ($transacao) {
         $stmtSaldo = $pdo->prepare("SELECT tipo, valor FROM transacoes WHERE id_usuario = :id_usuario AND cancelada = 0 AND data <= CURDATE()");
-        
         $stmtSaldo->execute(['id_usuario' => $_SESSION['usuario_id']]);
 
         $totalEntradas = 0;
@@ -25,6 +24,16 @@ if ($id) {
                 $totalEntradas += (float) $row['valor'];
             } else {
                 $totalSaidas += (float) $row['valor'];
+            }
+        }
+        $saldoAtual = $totalEntradas - $totalSaidas;
+        $saldoAposExcluir = $saldoAtual;
+
+        if ($transacao['data'] <= date('Y-m-d')) {
+            if ($transacao['tipo'] === 'Entrada') {
+                $saldoAposExcluir -= (float) $transacao['valor'];
+            } else {
+                $saldoAposExcluir += (float) $transacao['valor'];
             }
         }
 

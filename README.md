@@ -4,9 +4,9 @@
 
 ### 📌 Sobre o Projeto
 
-O **MyPocket** é um sistema de gestão financeira pessoal desenvolvido em PHP com foco na aplicação dos conceitos de **Programação Orientada a Objetos (POO)**. O sistema foi criado para auxiliar usuários no controle de suas finanças, permitindo o registro de receitas e despesas de maneira simples, organizada e segura.
+O **MyPocket** é um sistema de gestão financeira pessoal desenvolvido em PHP com foco na aplicação dos conceitos de **Programação Orientada a Objetos (POO)**. O sistema permite registrar entradas, saídas e transações do tipo **Diario**, além de trabalhar com transações únicas, recorrências fixas e parceladas.
 
-A aplicação simula uma carteira financeira digital, onde todas as movimentações são registradas em um histórico e refletem automaticamente no saldo disponível. O projeto foi desenvolvido com o objetivo de colocar em prática conceitos fundamentais de desenvolvimento de software, como modelagem de classes, encapsulamento de dados, herança, abstração e polimorfismo.
+A aplicação simula uma carteira financeira digital. As movimentações são armazenadas no banco de dados e utilizadas para calcular o saldo, os resumos por período e as previsões de recorrências que ainda não aconteceram.
 
 ---
 
@@ -14,54 +14,39 @@ A aplicação simula uma carteira financeira digital, onde todas as movimentaç�
 
 * Facilitar o controle financeiro pessoal.
 * Registrar receitas e despesas de forma organizada.
-* Calcular automaticamente o saldo da carteira.
+* Calcular o saldo a partir das transações registradas.
 * Armazenar e exibir o histórico de movimentações.
-* Garantir a integridade dos dados por meio de validações.
-* Aplicar conceitos de Programação Orientada a Objetos em um projeto prático.
+* Trabalhar com recorrências automáticas.
+* Exibir previsões de entradas e saídas futuras.
+* Aplicar conceitos de Programação Orientada a Objetos.
 
 ---
 
 ### ⚙️ Funcionalidades
 
-#### 💰 Cadastro de Receitas
+#### 💰 Cadastro de Entradas e Saídas
+Permite registrar receitas, despesas e transações do tipo **Diario**, informando descrição, valor e data.
 
-Permite registrar entradas de dinheiro, informando descrição, valor e data da movimentação.
+#### 🔄 Recorrências
+Permite cadastrar transações recorrentes com frequência **fixa** ou **parcelada**. As recorrências ficam registradas separadamente e podem gerar suas ocorrências na tabela de transações.
 
-#### 💸 Cadastro de Despesas
+#### 📅 Geração de Ocorrências
+O sistema verifica as recorrências ativas, identifica as datas que devem existir e evita criar uma ocorrência duplicada para a mesma recorrência e data.
 
-Permite registrar gastos realizados pelo usuário, atualizando automaticamente o saldo da carteira.
+#### 📈 Previsão de Recorrências
+O sistema calcula entradas e saídas recorrentes que ainda não foram registradas, permitindo exibir uma previsão por mês sem criar uma nova transação no banco apenas para realizar o cálculo.
 
 #### ✏️ Edição de Transações
-
-Permite alterar o valor, tipo, descrição ou data de uma transação já cadastrada, recalculando o saldo automaticamente.
+Permite alterar valor, tipo, descrição e data de uma transação cadastrada.
 
 #### 🗑️ Exclusão de Transações
+Transações normais podem ser excluídas. Em transações ligadas a uma recorrência, o sistema utiliza o campo `cancelada` para marcar a ocorrência como cancelada sem removê-la fisicamente.
 
-Permite remover uma transação do histórico, com o saldo sendo atualizado automaticamente após a exclusão.
+#### 🔎 Filtros e Extratos
+Permite consultar as movimentações e filtrar o extrato por período e tipo.
 
-#### 🔎 Filtro de Extrato
-
-Permite filtrar o histórico de transações exibindo apenas receitas, apenas despesas, ou todas as movimentações.
-
-#### 📊 Controle Automático de Saldo
-
-O saldo é atualizado sempre que uma nova receita ou despesa é adicionada, evitando cálculos manuais.
-
-#### 📜 Histórico de Transações
-
-Todas as movimentações ficam registradas em uma lista organizada, permitindo o acompanhamento financeiro ao longo do tempo.
-
-#### ✅ Validação de Dados
-
-O sistema impede operações inválidas, como valores negativos, informações incompletas ou datas fora do período permitido, garantindo maior segurança e confiabilidade.
-
-#### 🔒 Proteção contra Saldo Negativo
-
-Antes de confirmar uma nova transação, uma edição ou uma exclusão, o sistema recalcula o saldo resultante da operação. Caso o saldo ficasse negativo, a operação é bloqueada e uma mensagem de erro é exibida ao usuário.
-
-#### 🗑️ Gerenciamento de Registros
-
-Possibilita visualizar e organizar as transações registradas pelo usuário.
+#### 🔒 Autenticação
+Cada usuário possui suas próprias transações e recorrências, identificadas pelo `id_usuario`.
 
 ---
 
@@ -69,68 +54,88 @@ Possibilita visualizar e organizar as transações registradas pelo usuário.
 
 O projeto utiliza **MySQL**, acessado via **PDO**, com a conexão configurada em `database/conexao.php`.
 
-Banco: `sistema_crud`
+**Banco:** `mypocket`
 
-Tabela principal: `transacoes`, com as colunas:
+**Tabelas:** `usuarios`, `recorrencias` e `transacoes`.
 
-| Coluna     | Tipo                  | Descrição                          |
-|------------|-----------------------|-------------------------------------|
-| id         | INT (auto increment)  | Identificador único da transação    |
-| valor      | DECIMAL / FLOAT        | Valor da movimentação               |
-| tipo       | VARCHAR                | `"Entrada"` (receita) ou `"Saida"` (despesa) |
-| descricao  | VARCHAR                | Descrição da movimentação           |
-| data       | DATE                    | Data da movimentação                |
+#### `usuarios`
 
-O saldo da carteira **não é armazenado diretamente no banco** — ele é sempre recalculado a partir da soma de todas as transações cadastradas, garantindo que o valor exibido esteja sempre consistente com o histórico.
+Armazena os usuários do sistema, incluindo nome, e-mail, senha e data de criação.
+
+#### `recorrencias`
+
+Armazena as regras das recorrências:
+
+| Coluna | Descrição |
+|---|---|
+| `id` | Identificador da recorrência |
+| `descricao` | Descrição da recorrência |
+| `valor` | Valor da movimentação |
+| `tipo` | `Entrada`, `Saida` ou `Diario` |
+| `frequencia` | `fixa` ou `parc` |
+| `data_inicio` | Data inicial |
+| `data_fim` | Data final, quando houver |
+| `dia_vencimento` | Dia usado em recorrências mensais |
+| `ativa` | Indica se a recorrência está ativa |
+| `id_usuario` | Usuário dono da recorrência |
+
+#### `transacoes`
+
+Armazena as ocorrências efetivamente registradas:
+
+| Coluna | Descrição |
+|---|---|
+| `id` | Identificador da transação |
+| `valor` | Valor da movimentação |
+| `tipo` | `Entrada`, `Saida` ou `Diario` |
+| `descricao` | Descrição da movimentação |
+| `data` | Data da transação |
+| `id_usuario` | Usuário dono da transação |
+| `id_recorrencia` | Recorrência de origem, quando existir |
+| `data_recorrencia` | Data original da ocorrência da recorrência |
+| `cancelada` | Indica se a ocorrência foi cancelada |
 
 ---
 
-### 🔄 CRUD
+### 🔗 Relação entre as tabelas
 
-O sistema implementa as quatro operações básicas sobre a tabela `transacoes`:
+```text
+usuarios
+   ├── 1:N → transacoes
+   └── 1:N → recorrencias
 
-* **Create**: cadastra uma nova receita ou despesa, validando o valor, a data e se a operação não deixaria o saldo negativo antes de inserir no banco.
-* **Read**: busca todas as transações do banco e exibe o saldo atual, os totais de receitas/despesas e o extrato completo, com opção de filtro.
-* **Update**: permite alterar uma transação existente, recalculando o saldo que resultaria da alteração antes de confirmar a atualização.
-* **Delete**: remove uma transação do banco, verificando antes se a exclusão não deixaria o saldo negativo.
+recorrencias
+   └── 1:N → transacoes
+```
+
+Uma recorrência representa a **regra**. Uma transação representa uma **ocorrência** dessa regra.
 
 ---
 
 ### 🏗️ Estrutura Orientada a Objetos
 
-O projeto foi desenvolvido seguindo os princípios da Programação Orientada a Objetos:
+O projeto utiliza:
 
-* **Encapsulamento:** proteção dos atributos das classes por meio de métodos getters e setters.
-* **Herança:** reutilização de características comuns entre classes relacionadas.
-* **Abstração:** representação dos elementos do sistema através de classes específicas.
-* **Polimorfismo:** tratamento uniforme de diferentes tipos de transações financeiras.
-
----
+* **Encapsulamento:** atributos protegidos e acesso por métodos.
+* **Herança:** `Receita`, `Despesa` e `Diario` herdam de `Transacao`.
+* **Abstração:** `Transacao` é uma classe abstrata.
+* **Polimorfismo:** diferentes tipos de transação podem ser tratados por meio da classe base.
 
 ### 📂 Principais Classes
 
-* **Carteira:** responsável pelo gerenciamento do saldo e do histórico financeiro.
-* **Transacao:** classe base que representa uma movimentação financeira.
-* **Receita:** especialização de transação para entradas de dinheiro.
-* **Despesa:** especialização de transação para saídas de dinheiro.
+* **Carteira:** gerencia o saldo e as transações carregadas.
+* **Transacao:** classe abstrata base das movimentações.
+* **Receita:** representa entradas.
+* **Despesa:** representa saídas.
+* **Diario:** representa transações do tipo diário.
 
 ---
 
 ### 🖥️ Tecnologias Utilizadas
 
 * PHP
-* MySQL (via PDO)
+* MySQL via PDO
 * HTML5
 * CSS3
 * Bulma
 * Programação Orientada a Objetos (POO)
-
----
-
-### 📈 Benefícios do Sistema
-
-O MyPocket oferece uma maneira prática de acompanhar receitas e despesas, auxiliando na organização financeira e permitindo uma visão clara da situação econômica do usuário. Além disso, o projeto serve como ferramenta de aprendizado para o desenvolvimento de aplicações orientadas a objetos.
-
-### 👨‍💻 Desenvolvido por
-
-Vitor Matos – Projeto acadêmico desenvolvido para a disciplina de Programação Web II (PW2).
